@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders Table</title>
+    <link rel="stylesheet" href="../styles/main.css">
+    <style>
+        table { width: 100%; border-collapse: collapse; background: #232323; color: #f4f4f4; }
+        th, td { border: 1px solid #444; padding: 8px; text-align: left; }
+        th { background: #181818; }
+        tr:nth-child(even) { background: #202020; }
+    </style>
+</head>
+<body>
+    <div id="navbar"></div>
+    <h1>Orders (Last 24 Hours)</h1>
+    <div id="orders-table-container">Loading...</div>
+    <script src="../src/navbar.js"></script>
+    <script type="module" src="../src/displayOrders.js"></script>
+</body>
+</html>
