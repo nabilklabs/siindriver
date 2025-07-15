@@ -1,15 +1,595 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Website</title>
-    <link rel="stylesheet" href="../styles/main.css">
-</head>
-<body>
-    <div id="navbar"></div>
-    <h1>Welcome to the Simple Website</h1>
-    <p style="text-align:center;max-width:600px;margin:32px auto 0 auto;">This is the home page. Use the navigation bar above to view orders or see the map.</p>
-    <script src="../src/navbar.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <title>Siin Drive - Login</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: linear-gradient(135deg, #181818 0%, #2a2a2a 100%);
+        color: #f4f4f4;
+        min-height: 100vh;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Mobile-first approach */
+      .mobile-container {
+        width: 100%;
+        max-width: 100vw;
+        padding: 0;
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .login-content {
+        padding: 40px 20px;
+        text-align: center;
+        width: 100%;
+        max-width: 400px;
+      }
+
+      /* Logo styling */
+      .logo-container {
+        text-align: center;
+        padding: 0 0 60px 0;
+        margin-bottom: 40px;
+      }
+
+      .logo-image {
+        max-width: 200px;
+        height: 50px;
+        filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+      }
+
+      /* Login form */
+      .login-form {
+        background: rgba(35, 35, 35, 0.95);
+        border-radius: 24px;
+        padding: 40px 30px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 204, 0, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+
+      .login-title {
+        color: #f4f4f4;
+        font-size: 24px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      .login-subtitle {
+        color: #ccc;
+        font-size: 16px;
+        margin-bottom: 40px;
+      }
+
+      /* PIN input container */
+      .pin-container {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin-bottom: 40px;
+      }
+
+      .pin-input {
+        width: 60px;
+        height: 60px;
+        border: 2px solid rgba(122, 100, 212, 0.3);
+        border-radius: 12px;
+        background: rgba(51, 51, 51, 0.8);
+        color: #f4f4f4;
+        font-size: 24px;
+        font-weight: 600;
+        text-align: center;
+        outline: none;
+        transition: all 0.3s ease;
+        -webkit-appearance: none;
+        -moz-appearance: textfield;
+      }
+
+      .pin-input::-webkit-outer-spin-button,
+      .pin-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        appearance: none;
+        margin: 0;
+      }
+
+      .pin-input:focus {
+        border-color: #7a64d4;
+        box-shadow: 0 0 0 4px rgba(122, 100, 212, 0.2);
+        background: rgba(122, 100, 212, 0.1);
+      }
+
+      .pin-input.filled {
+        border-color: #7a64d4;
+        background: rgba(255, 204, 0, 0.1);
+      }
+
+      .pin-input.error {
+        border-color: #ff4757;
+        background: rgba(255, 71, 87, 0.1);
+        animation: shake 0.5s ease-in-out;
+      }
+
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        25% {
+          transform: translateX(-5px);
+        }
+        75% {
+          transform: translateX(5px);
+        }
+      }
+
+      /* Loading spinner */
+      .loading-spinner {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        border: 2px solid #444;
+        border-radius: 50%;
+        border-top-color: #7a64d4;
+        animation: spin 1s ease-in-out infinite;
+        margin-right: 8px;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Login button */
+      .login-btn {
+        background: linear-gradient(135deg, #7a64d4 0%, #5843b2 100%);
+        color: #181818;
+        border: none;
+        padding: 16px 32px;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 20px rgba(255, 204, 0, 0.3);
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .login-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(255, 204, 0, 0.4);
+      }
+
+      .login-btn:active {
+        transform: translateY(0);
+      }
+
+      .login-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      /* Error message */
+      .error-message {
+        color: #ff4757;
+        font-size: 14px;
+        margin-top: 16px;
+        padding: 12px;
+        background: rgba(255, 71, 87, 0.1);
+        border-radius: 8px;
+        border: 1px solid rgba(255, 71, 87, 0.2);
+      }
+
+      /* Success message */
+      .success-message {
+        color: #00f5cc;
+        font-size: 14px;
+        margin-top: 16px;
+        padding: 12px;
+        background: rgba(0, 245, 204, 0.1);
+        border-radius: 8px;
+        border: 1px solid rgba(0, 245, 204, 0.2);
+      }
+
+      /* Responsive design for larger screens */
+      @media (min-width: 768px) {
+        .mobile-container {
+          max-width: 500px;
+          margin: 0 auto;
+        }
+
+        .login-form {
+          position: relative;
+        }
+
+        .login-form::before {
+          content: "";
+          position: absolute;
+          top: -2px;
+          left: -2px;
+          right: -2px;
+          bottom: -2px;
+          background: linear-gradient(135deg, #5843b2, #7a64d4);
+          border-radius: 26px;
+          z-index: -1;
+        }
+
+        .pin-input {
+          width: 70px;
+          height: 70px;
+          font-size: 28px;
+        }
+      }
+
+      @media (min-width: 1024px) {
+        .mobile-container {
+          max-width: 600px;
+        }
+      }
+
+      /* Hide number input arrows on mobile */
+      input[type="number"]::-webkit-outer-spin-button,
+      input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+
+      input[type="number"] {
+        -moz-appearance: textfield;
+        appearance: textfield;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mobile-container">
+      <div class="login-content">
+        <div class="logo-container">
+          <img
+            src="../assets/White Logo.png"
+            alt="SIIN Drive"
+            class="logo-image"
+          />
+        </div>
+
+        <div class="login-form">
+          <h1 class="login-title">Welcome Back</h1>
+          <p class="login-subtitle">Enter your 4-digit PIN to continue</p>
+
+          <div class="pin-container">
+            <input
+              type="number"
+              class="pin-input"
+              maxlength="1"
+              min="0"
+              max="9"
+              id="pin1"
+            />
+            <input
+              type="number"
+              class="pin-input"
+              maxlength="1"
+              min="0"
+              max="9"
+              id="pin2"
+            />
+            <input
+              type="number"
+              class="pin-input"
+              maxlength="1"
+              min="0"
+              max="9"
+              id="pin3"
+            />
+            <input
+              type="number"
+              class="pin-input"
+              maxlength="1"
+              min="0"
+              max="9"
+              id="pin4"
+            />
+          </div>
+
+          <button class="login-btn" id="loginBtn" disabled>
+            <span id="loginBtnText">Enter PIN</span>
+          </button>
+
+          <div id="messageContainer"></div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Firebase database URL
+      const FIREBASE_URL =
+        "https://siindrive-default-rtdb.europe-west1.firebasedatabase.app/users.json";
+
+      // Get all PIN inputs
+      const pinInputs = document.querySelectorAll(".pin-input");
+      const loginBtn = document.getElementById("loginBtn");
+      const loginBtnText = document.getElementById("loginBtnText");
+      const messageContainer = document.getElementById("messageContainer");
+
+      // Current PIN value
+      let currentPin = "";
+
+      // Setup PIN input functionality
+      function setupPinInputs() {
+        pinInputs.forEach((input, index) => {
+          // Force numeric keyboard on mobile
+          input.setAttribute("inputmode", "numeric");
+          input.setAttribute("pattern", "[0-9]");
+
+          input.addEventListener("input", (e) => {
+            const value = e.target.value;
+
+            // Only allow single digit
+            if (value.length > 1) {
+              e.target.value = value.slice(-1);
+            }
+
+            // Only allow numbers
+            if (!/^\d*$/.test(e.target.value)) {
+              e.target.value = "";
+              return;
+            }
+
+            // Update visual state
+            if (e.target.value) {
+              e.target.classList.add("filled");
+              // Move to next input
+              if (index < pinInputs.length - 1) {
+                pinInputs[index + 1].focus();
+              }
+            } else {
+              e.target.classList.remove("filled");
+            }
+
+            updatePinValue();
+          });
+
+          input.addEventListener("keydown", (e) => {
+            // Handle backspace
+            if (e.key === "Backspace" && !e.target.value && index > 0) {
+              pinInputs[index - 1].focus();
+              pinInputs[index - 1].value = "";
+              pinInputs[index - 1].classList.remove("filled");
+              updatePinValue();
+            }
+
+            // Handle enter key
+            if (e.key === "Enter" && currentPin.length === 4) {
+              handleLogin();
+            }
+          });
+
+          input.addEventListener("focus", () => {
+            // Select all text when focused
+            setTimeout(() => input.select(), 0);
+          });
+        });
+      }
+
+      // Update PIN value and button state
+      function updatePinValue() {
+        currentPin = Array.from(pinInputs)
+          .map((input) => input.value)
+          .join("");
+
+        if (currentPin.length === 4) {
+          loginBtn.disabled = false;
+          loginBtnText.textContent = "Sign In";
+        } else {
+          loginBtn.disabled = true;
+          loginBtnText.textContent = "Enter PIN";
+        }
+
+        // Clear any error states
+        clearErrors();
+      }
+
+      // Clear error states
+      function clearErrors() {
+        pinInputs.forEach((input) => {
+          input.classList.remove("error");
+        });
+        messageContainer.innerHTML = "";
+      }
+
+      // Show error state
+      function showError(message) {
+        pinInputs.forEach((input) => {
+          input.classList.add("error");
+        });
+        messageContainer.innerHTML = `<div class="error-message">${message}</div>`;
+
+        // Remove error state after animation
+        setTimeout(() => {
+          pinInputs.forEach((input) => {
+            input.classList.remove("error");
+          });
+        }, 500);
+      }
+
+      // Show success state
+      function showSuccess(message) {
+        messageContainer.innerHTML = `<div class="success-message">${message}</div>`;
+      }
+
+      // Show loading state
+      function showLoading() {
+        loginBtn.disabled = true;
+        loginBtnText.innerHTML =
+          '<div class="loading-spinner"></div>Signing in...';
+      }
+
+      // Hide loading state
+      function hideLoading() {
+        loginBtn.disabled = currentPin.length !== 4;
+        loginBtnText.textContent =
+          currentPin.length === 4 ? "Sign In" : "Enter PIN";
+      }
+
+      // Fetch users from Firebase
+      async function fetchUsers() {
+        try {
+          const response = await fetch(FIREBASE_URL);
+          if (!response.ok) {
+            throw new Error(`Network error: ${response.status}`);
+          }
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error("Error fetching users:", error);
+          throw error;
+        }
+      }
+
+      // Handle login
+      async function handleLogin() {
+        if (currentPin.length !== 4) {
+          showError("Please enter a 4-digit PIN");
+          return;
+        }
+
+        showLoading();
+        clearErrors();
+
+        try {
+          const users = await fetchUsers();
+
+          console.log("Fetched users:", users);
+          console.log("Current PIN:", currentPin);
+          console.log("PIN type:", typeof currentPin);
+
+          if (!users) {
+            throw new Error("No users found in database");
+          }
+
+          // Find user with matching PIN (handle both string and number types)
+          const userEntry = Object.entries(users)
+            .filter(([id, user]) => user !== null) // Filter out null values
+            .find(([id, user]) => {
+              console.log(`Checking user ${id}:`, user);
+              console.log(
+                `User pass: ${user.pass} (type: ${typeof user.pass})`
+              );
+              console.log(`Comparison results:`, {
+                stringMatch: user.pass === currentPin,
+                numberMatch: user.pass === parseInt(currentPin),
+                stringToNumber: user.pass.toString() === currentPin,
+              });
+              return (
+                user.pass === currentPin ||
+                user.pass === parseInt(currentPin) ||
+                user.pass.toString() === currentPin
+              );
+            });
+
+          if (!userEntry) {
+            hideLoading();
+            showError("Invalid PIN. Please try again.");
+            // Clear PIN inputs
+            pinInputs.forEach((input) => {
+              input.value = "";
+              input.classList.remove("filled");
+            });
+            currentPin = "";
+            pinInputs[0].focus();
+            return;
+          }
+
+          const [userId, userData] = userEntry;
+
+          // Check if user is a driver
+          if (userData.type === "drive") {
+            showSuccess("Login successful! Redirecting...");
+
+            // Store user data in localStorage for the mobile app
+            localStorage.setItem(
+              "currentUser",
+              JSON.stringify({
+                id: userId,
+                name: userData.name,
+                email: userData.email,
+                type: userData.type,
+              })
+            );
+
+            // Redirect to mobile.html after short delay
+            setTimeout(() => {
+              window.location.href = "mobile.html";
+            }, 1500);
+          } else {
+            hideLoading();
+            showError("Access denied. This app is for drivers only.");
+            // Clear PIN inputs
+            pinInputs.forEach((input) => {
+              input.value = "";
+              input.classList.remove("filled");
+            });
+            currentPin = "";
+            pinInputs[0].focus();
+          }
+        } catch (error) {
+          hideLoading();
+          showError(
+            "Login failed. Please check your connection and try again."
+          );
+          console.error("Login error:", error);
+        }
+      }
+
+      // Setup login button
+      loginBtn.addEventListener("click", handleLogin);
+
+      // Initialize
+      document.addEventListener("DOMContentLoaded", function () {
+        setupPinInputs();
+        // Focus first input
+        pinInputs[0].focus();
+      });
+
+      // Prevent zoom on double tap
+      let lastTouchEnd = 0;
+      document.addEventListener(
+        "touchend",
+        function (event) {
+          const now = new Date().getTime();
+          if (now - lastTouchEnd <= 300) {
+            event.preventDefault();
+          }
+          lastTouchEnd = now;
+        },
+        false
+      );
+    </script>
+  </body>
 </html>

@@ -1,0 +1,2127 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <title>Siin Drive</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: linear-gradient(135deg, #181818 0%, #2a2a2a 100%);
+        color: #f4f4f4;
+        min-height: 100vh;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* Mobile-first approach - default styles for mobile */
+      .mobile-container {
+        width: 100%;
+        max-width: 100vw;
+        padding: 0;
+        margin: 0;
+        min-height: 100vh;
+      }
+
+      .mobile-content {
+        padding: 20px 16px;
+        padding-bottom: 80px; /* Space for bottom navigation if needed */
+      }
+
+      /* Loading spinner utility */
+      .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #444;
+        border-radius: 50%;
+        border-top-color: #ffcc00;
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Toast notification system */
+      .toast {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(35, 35, 35, 0.95);
+        color: #f4f4f4;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        z-index: 1001;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+
+      .toast.show {
+        opacity: 1;
+      }
+
+      /* Responsive adjustments for larger screens (tablet and up) */
+      @media (min-width: 768px) {
+        body {
+          background: #181818;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        }
+
+        .mobile-container {
+          max-width: 375px;
+          background: linear-gradient(135deg, #181818 0%, #2a2a2a 100%);
+          border-radius: 20px;
+          overflow: hidden;
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+          position: relative;
+        }
+
+        .mobile-container::before {
+          content: "";
+          position: absolute;
+          top: -2px;
+          left: -2px;
+          right: -2px;
+          bottom: -2px;
+          background: linear-gradient(135deg, #ffcc00, #e6b800);
+          border-radius: 22px;
+          z-index: -1;
+        }
+      }
+
+      /* Touch-friendly interactions */
+      @media (hover: none) and (pointer: coarse) {
+        /* Touch-specific styles can be added here */
+      }
+
+      /* Utility classes for components */
+      .btn {
+        background: linear-gradient(135deg, #ffcc00 0%, #e6b800 100%);
+        color: #181818;
+        border: none;
+        padding: 16px 20px;
+        border-radius: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 10px rgba(255, 204, 0, 0.3);
+        width: 100%;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+      }
+
+      .btn:hover,
+      .btn:active {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(255, 204, 0, 0.4);
+      }
+
+      .btn:active {
+        transform: translateY(0);
+      }
+
+      .btn-secondary {
+        background: linear-gradient(135deg, #444 0%, #666 100%);
+        color: #f4f4f4;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+      }
+
+      .btn-secondary:hover,
+      .btn-secondary:active {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      }
+
+      .card {
+        background: rgba(35, 35, 35, 0.95);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 204, 0, 0.1);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+      }
+
+      .card h2 {
+        color: #ffcc00;
+        font-size: 20px;
+        margin-bottom: 16px;
+        font-weight: 600;
+      }
+
+      .card p {
+        color: #ccc;
+        line-height: 1.6;
+        font-size: 16px;
+      }
+
+      /* Touch-friendly interactions for mobile */
+      @media (hover: none) and (pointer: coarse) {
+        .btn {
+          padding: 18px 20px;
+        }
+      }
+
+      /* Logo styling */
+      .logo-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 15px 0 20px 0;
+        margin-bottom: 20px;
+      }
+
+      .logo-left {
+        position: absolute;
+        left: 0;
+        font-size: 22px;
+        font-weight: 800;
+        color: #7a64d4;
+      }
+
+      .logo-center {
+        text-align: center;
+      }
+
+      .logo-image {
+        max-width: 120px;
+        height: 30px;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+      }
+
+      .logo-right {
+        position: absolute;
+        right: 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #f4f4f4;
+        max-width: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* Toggle switch styling */
+      .toggle-container {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 200px;
+        height: 50px;
+        background: rgba(35, 35, 35, 0.95);
+        border-radius: 25px;
+        border: 2px solid rgba(122, 100, 212, 1);
+        overflow: hidden;
+      }
+
+      .toggle-option {
+        position: absolute;
+        width: 50%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 2;
+      }
+
+      .toggle-option.left {
+        left: 0;
+        color: #181818;
+      }
+
+      .toggle-option.right {
+        right: 0;
+        color: #ccc;
+      }
+
+      .toggle-slider {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(135deg, #7a64d4 0%, #5843b2 100%);
+        border-radius: 25px;
+        transition: transform 0.3s ease;
+        z-index: 1;
+      }
+
+      .toggle-switch.deliver .toggle-slider {
+        transform: translateX(100%);
+      }
+
+      .toggle-switch.deliver .toggle-option.left {
+        color: #ccc;
+      }
+
+      .toggle-switch.deliver .toggle-option.right {
+        color: #181818;
+      }
+
+      /* Floating map button */
+      .floating-map-btn {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        background: linear-gradient(135deg, #7a64d4 0%, #5843b2 100%);
+        border: none;
+        border-radius: 50%;
+        color: #181818;
+        font-size: 24px;
+        cursor: pointer;
+        box-shadow: 0 4px 20px rgba(122, 100, 212, 1);
+        transition: all 0.3s ease;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .floating-map-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 30px rgba(122, 100, 212, 1);
+      }
+
+      .floating-map-btn:active {
+        transform: scale(0.95);
+      }
+
+      /* Card styles are handled by CardComponent.js */
+
+      /* Modal styles */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        z-index: 2000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+
+      .modal-overlay.show {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .modal-content {
+        background: linear-gradient(135deg, #232323 0%, #2a2a2a 100%);
+        border-radius: 20px;
+        padding: 20px;
+        width: 100%;
+        max-width: 400px;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(255, 204, 0, 0.2);
+        transform: scale(0.9) translateY(20px);
+        transition: all 0.3s ease;
+        position: relative;
+      }
+
+      .modal-overlay.show .modal-content {
+        transform: scale(1) translateY(0);
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(255, 204, 0, 0.2);
+      }
+
+      .modal-title {
+        color: #7a64d4;
+        font-size: 20px;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .modal-close {
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: #f4f4f4;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 18px;
+        transition: all 0.3s ease;
+      }
+
+      .modal-close:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.1);
+      }
+
+      .modal-close:active {
+        transform: scale(0.95);
+      }
+
+      .modal-body {
+        color: #f4f4f4;
+      }
+
+      .modal-section {
+        margin-bottom: 20px;
+      }
+
+      .modal-section h3 {
+        color: #7a64d4;
+        font-size: 16px;
+        margin-bottom: 10px;
+        font-weight: 600;
+      }
+
+      .modal-section p {
+        color: #ccc;
+        line-height: 1.6;
+        margin-bottom: 8px;
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 20px;
+      }
+
+      .modal-btn {
+        background: linear-gradient(135deg, #7a64d4 0%, #5843b2 100%);
+        color: #ffffff;
+        border: none;
+        padding: 12px 20px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 10px rgba(122, 100, 212, 0.3);
+        flex: 1;
+        text-align: center;
+      }
+
+      .modal-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(122, 100, 212, 0.4);
+      }
+
+      .modal-btn:active {
+        transform: translateY(0);
+      }
+
+      .modal-btn.primary-cta {
+        background: linear-gradient(135deg, #64d4a0 0%, #64d4a0 100%);
+        color: #181818;
+        box-shadow: 0 2px 10px rgba(255, 204, 0, 0.3);
+        font-weight: 700;
+        font-size: 16px;
+        padding: 16px 20px;
+      }
+
+      .modal-btn.primary-cta:hover {
+        box-shadow: 0 4px 20px rgba(255, 204, 0, 0.4);
+      }
+
+      .modal-btn.whatsapp {
+        background: linear-gradient(135deg, #25d366 0%, #1da851 100%);
+        box-shadow: 0 2px 10px rgba(37, 211, 102, 0.3);
+      }
+
+      .modal-btn.whatsapp:hover {
+        box-shadow: 0 4px 20px rgba(37, 211, 102, 0.4);
+      }
+
+      .modal-btn.navigation {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        box-shadow: 0 2px 10px rgba(0, 123, 255, 0.3);
+      }
+
+      .modal-btn.navigation:hover {
+        box-shadow: 0 4px 20px rgba(0, 123, 255, 0.4);
+      }
+
+      .user-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #7a64d4 0%, #5843b2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 600;
+        color: #ffffff;
+        margin-bottom: 15px;
+        box-shadow: 0 4px 20px rgba(122, 100, 212, 0.3);
+      }
+
+      .item-count-badge {
+        background: linear-gradient(135deg, #7a64d4 0%, #7a64d4 100%);
+        color: #181818;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        display: inline-block;
+        margin-left: 10px;
+      }
+
+      /* Cash payment styles */
+      .cash-payment-price {
+        color: #ff4757 !important;
+        font-weight: 600;
+      }
+
+      .cash-collection-total {
+        background: rgba(255, 71, 87, 0.1);
+        border: 1px solid rgba(255, 71, 87, 0.3);
+        border-radius: 8px;
+        padding: 12px;
+        margin-top: 15px;
+        text-align: center;
+      }
+
+      .cash-collection-label {
+        color: #ff4757;
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 5px;
+      }
+
+      .cash-collection-amount {
+        color: #ff4757;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      /* Order details styles */
+      .order-details-section {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid rgba(122, 100, 212, 0.2);
+        border-radius: 8px;
+        padding: 15px;
+        background: rgba(35, 35, 35, 0.5);
+      }
+
+      .order-items-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .order-item-modal {
+        background: rgba(51, 51, 51, 0.8);
+        border-radius: 4px;
+        padding: 8px;
+        border-left: 3px solid #00f5cc;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+      }
+
+      .order-item-modal.removed {
+        background: rgba(51, 51, 51, 0.4);
+        border-left-color: #ff4757;
+        opacity: 0.7;
+      }
+
+      .order-item-modal.removed .item-name,
+      .order-item-modal.removed .item-price {
+        text-decoration: line-through;
+        opacity: 0.5;
+        color: #888 !important;
+      }
+
+      .order-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 5px;
+      }
+
+      .order-id {
+        font-weight: 600;
+        color: #00f5cc;
+        font-size: 12px;
+      }
+
+      .order-group-title {
+        margin-bottom: 10px;
+      }
+
+      .order-status {
+        font-size: 11px;
+        color: #ccc;
+        background: rgba(122, 100, 212, 0.2);
+        padding: 2px 6px;
+        border-radius: 10px;
+      }
+
+      .order-item-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .item-name {
+        color: #f4f4f4;
+        font-size: 13px;
+        flex: 1;
+      }
+
+      .item-price {
+        color: #7a64d4;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .item-remove-btn {
+        background: rgba(255, 71, 87, 0.8);
+        color: #ffffff;
+        border: none;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.3s ease;
+        flex-shrink: 0;
+      }
+
+      .item-remove-btn:hover {
+        background: rgba(255, 71, 87, 1);
+        transform: scale(1.1);
+      }
+
+      .item-remove-btn:active {
+        transform: scale(0.95);
+      }
+
+      /* Mobile-specific modal adjustments */
+      @media (max-width: 480px) {
+        .modal-overlay {
+          padding: 10px;
+        }
+
+        .modal-content {
+          max-height: 85vh;
+          border-radius: 16px;
+          padding: 16px;
+        }
+
+        .modal-title {
+          font-size: 18px;
+        }
+
+        .modal-actions {
+          flex-direction: column;
+        }
+
+        .modal-btn {
+          padding: 14px 20px;
+        }
+      }
+
+      /* Touch-friendly modal interactions */
+      @media (hover: none) and (pointer: coarse) {
+        .modal-btn {
+          padding: 14px 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="mobile-container">
+      <div class="mobile-content">
+        <div class="logo-container">
+          <div class="logo-left">BHD 0</div>
+          <div class="logo-center">
+            <img
+              src="../assets/White Logo.png"
+              alt="SIIN Driver"
+              class="logo-image"
+            />
+          </div>
+          <div class="logo-right">{userdata.name}</div>
+        </div>
+
+        <div class="toggle-container">
+          <div class="toggle-switch" id="modeToggle">
+            <div class="toggle-slider"></div>
+            <div class="toggle-option left" onclick="setMode('pickup')">
+              Pick Up
+            </div>
+            <div class="toggle-option right" onclick="setMode('deliver')">
+              Deliver
+            </div>
+          </div>
+        </div>
+
+        <!-- Card container will be managed by CardComponent -->
+        <div id="cardContainer"></div>
+      </div>
+    </div>
+
+    <button class="floating-map-btn" onclick="openMap()">🗺️</button>
+
+    <!-- Modal -->
+    <div id="userModal" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title">Pick Up from Seller</h2>
+          <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div style="display: flex; align-items: center; margin-bottom: 20px">
+            <div class="user-avatar" id="modalAvatar">A</div>
+            <h2
+              id="modalUserName"
+              style="
+                margin: 0 0 0 15px;
+                color: #f4f4f4;
+                font-size: 22px;
+                font-weight: 600;
+              "
+            >
+              Loading...
+            </h2>
+          </div>
+          <div class="modal-section">
+            <div class="modal-actions">
+              <button
+                class="modal-btn primary-cta"
+                onclick="handlePrimaryCTA()"
+                id="primaryCTABtn"
+              >
+                Mark as Picked Up
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import CardComponent -->
+    <script src="components/CardComponent.js"></script>
+    <!-- Import Dispatch Services -->
+    <script type="module">
+      import { DispatchService } from "../src/dispatchService.js";
+      import { BHDeliveryService } from "../src/bhDeliveryService.js";
+      import { OrderGroupingService } from "../src/orderGroupingComponent.js";
+      import { fetchOrders } from "../src/fetchOrders.js";
+
+      // Make services available globally
+      window.DispatchService = DispatchService;
+      window.BHDeliveryService = BHDeliveryService;
+      window.OrderGroupingService = OrderGroupingService;
+      window.fetchOrders = fetchOrders;
+    </script>
+    <script>
+      // Mobile-specific JavaScript functionality
+      let cardComponent; // Will hold our CardComponent instance
+      let currentModalUser = null; // Store current user data for modal
+      let currentOrders = []; // Store current orders data
+      let currentMode = "pickup"; // Track current mode
+
+      // Load orders data based on mode
+      async function loadOrdersData(mode) {
+        try {
+          currentMode = mode;
+          console.log(`Loading orders for mode: ${mode}`);
+
+          if (mode === "pickup") {
+            // Load BH Pick Up orders (Seller Country = BH)
+            const orders = await window.DispatchService.loadBHPickUpOrders();
+            console.log("Pickup orders loaded:", orders.length);
+            const processedData =
+              window.OrderGroupingService.processBHPickupOrders(orders);
+            currentOrders = orders;
+            await displayOrdersAsCards(processedData, "seller");
+          } else if (mode === "deliver") {
+            // Load BH Delivery orders (Seller Country = BH AND Customer Country = BH)
+            const orders =
+              await window.BHDeliveryService.loadBHDeliveryOrders();
+            console.log("Delivery orders loaded:", orders.length);
+            const processedData =
+              window.OrderGroupingService.processBHDeliveryOrders(orders);
+            currentOrders = orders;
+            await displayOrdersAsCards(processedData, "customer");
+          }
+        } catch (error) {
+          console.error("Error loading orders data:", error);
+          // Fallback to sample data if API fails
+          initializeCardComponent();
+        }
+      }
+
+      // Display orders as cards
+      async function displayOrdersAsCards(processedData, groupType) {
+        const container = document.getElementById("cardContainer");
+        container.innerHTML = "";
+
+        if (
+          !processedData ||
+          !processedData.groupedOrders ||
+          processedData.groupedOrders.length === 0
+        ) {
+          container.innerHTML =
+            '<p style="text-align: center; color: #888; padding: 20px;">No orders found</p>';
+          return;
+        }
+
+        // Get picked up orders from Firebase
+        const pickedUpOrders = await getPickedUpOrdersFromFirebase();
+        console.log("Picked up orders from Firebase:", pickedUpOrders);
+
+        // Get removed orders from Firebase
+        const removedOrders = await getRemovedOrdersFromFirebase();
+        console.log("Removed orders from Firebase:", removedOrders);
+
+        // Get arrived at office orders from Firebase
+        const arrivedAtOfficeOrders =
+          await getArrivedAtOfficeOrdersFromFirebase();
+        console.log(
+          "Arrived at office orders from Firebase:",
+          arrivedAtOfficeOrders
+        );
+
+        // Filter out orders that have arrived at office from pickup mode
+        let filteredGroupedOrders = processedData.groupedOrders;
+        if (currentMode === "pickup") {
+          filteredGroupedOrders = processedData.groupedOrders
+            .map(([username, orders]) => {
+              // Filter out orders that have arrived at office
+              const filteredOrders = orders.filter(
+                (order) => !arrivedAtOfficeOrders.includes(order.OrderID)
+              );
+              return [username, filteredOrders];
+            })
+            .filter(([username, orders]) => orders.length > 0); // Remove groups with no orders
+        }
+
+        // Check if we have any filtered orders to display
+        if (filteredGroupedOrders.length === 0) {
+          container.innerHTML =
+            '<p style="text-align: center; color: #888; padding: 20px;">No orders found</p>';
+          return;
+        }
+
+        // Create card data from filtered orders
+        const cardData = filteredGroupedOrders.map(([username, orders]) => {
+          // Check for cash payments in delivery mode
+          const hasCashPayment =
+            currentMode === "deliver" &&
+            orders.some(
+              (order) => order.method && order.method.toLowerCase() === "cash"
+            );
+
+          // Check if any orders for this user have been picked up
+          const hasPickedUpOrders = orders.some((order) =>
+            pickedUpOrders.includes(order.OrderID)
+          );
+
+          // Check if ALL orders for this user have been removed by seller
+          const allOrdersRemoved = orders.every((order) =>
+            removedOrders.includes(order.OrderID)
+          );
+
+          // Determine if this group is completed based on mode
+          let isCompleted = false;
+          if (currentMode === "pickup") {
+            // In pickup mode, completed means picked up or all removed
+            isCompleted = hasPickedUpOrders || allOrdersRemoved;
+          } else if (currentMode === "deliver") {
+            // In delivery mode, completed means delivered (you can add delivered status logic here)
+            // For now, we'll keep it as false since delivery completion isn't implemented yet
+            isCompleted = false;
+          }
+
+          return {
+            id: username.toLowerCase().replace(/\s+/g, "_"),
+            username: username,
+            itemCount: orders.length,
+            urgent:
+              orders.some(
+                (order) =>
+                  order.ShippingStatus === "Urgent" || order.Priority === "High"
+              ) || hasCashPayment,
+            orders: orders,
+            groupType: groupType,
+            hasCashPayment: hasCashPayment,
+            hasPickedUpOrders: hasPickedUpOrders,
+            allOrdersRemoved: allOrdersRemoved,
+            isCompleted: isCompleted,
+          };
+        });
+
+        // Sort cards: completed orders (picked up or all removed) at the bottom, others at the top
+        cardData.sort((a, b) => {
+          if (a.isCompleted && !b.isCompleted) return 1;
+          if (!a.isCompleted && b.isCompleted) return -1;
+          return 0;
+        });
+
+        // Use CardComponent if available, otherwise fallback
+        if (typeof CardComponent !== "undefined") {
+          cardComponent = new CardComponent(container, {
+            onCardClick: async (userId, event) => {
+              console.log("Card clicked:", userId); // Debug log
+              const userData = cardData.find((user) => user.id === userId);
+              if (userData) {
+                console.log("Found user data:", userData); // Debug log
+                await openOrderModal(userData);
+              } else {
+                console.log("User data not found for:", userId); // Debug log
+              }
+            },
+            onWhatsAppClick: (userId, event) => {
+              const userData = cardData.find((user) => user.id === userId);
+              if (userData) {
+                showToast(`Opening WhatsApp for ${userData.username}`);
+                // In real implementation, open WhatsApp with user's number
+              }
+            },
+            onNavigationClick: (userId, event) => {
+              const userData = cardData.find((user) => user.id === userId);
+              if (userData) {
+                showToast(`Opening navigation for ${userData.username}`);
+                // In real implementation, open navigation to user's location
+              }
+            },
+          });
+
+          cardComponent.setResponsiveStyles();
+          cardComponent.populateCards(cardData);
+        } else {
+          createFallbackOrderCards(container, cardData);
+        }
+      }
+
+      // Create fallback cards for orders
+      function createFallbackOrderCards(container, cardData) {
+        container.style.cssText = `
+          display: grid;
+          grid-template-columns: repeat(2, 160px);
+          gap: 12px;
+          justify-content: center;
+          margin-bottom: 30px;
+          width: 100%;
+          box-sizing: border-box;
+          padding: 0 16px;
+        `;
+
+        cardData.forEach((userData) => {
+          const card = document.createElement("div");
+
+          // Determine background color based on status
+          let backgroundColor;
+          let boxShadowColor;
+
+          if (userData.isCompleted) {
+            // Blue background for completed orders (picked up or all removed)
+            backgroundColor =
+              "linear-gradient(135deg, #007bff 0%, #0056b3 100%)";
+            boxShadowColor = "rgba(0, 123, 255, 0.3)";
+          } else if (userData.urgent) {
+            // Red background for urgent orders
+            backgroundColor =
+              "linear-gradient(135deg, #ff4757 0%, #ff3742 100%)";
+            boxShadowColor = "rgba(255, 71, 87, 0.3)";
+          } else {
+            // Purple background for normal orders
+            backgroundColor =
+              "linear-gradient(135deg, #7a64d4 0%, #5843b2 100%)";
+            boxShadowColor = "rgba(122, 100, 212, 0.3)";
+          }
+
+          card.style.cssText = `
+            background: ${backgroundColor};
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 20px ${boxShadowColor};
+            border: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            color: #ffffff;
+            width: 160px;
+            height: 120px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+          `;
+
+          card.innerHTML = `
+            <div style="
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              width: 100%;
+              justify-content: space-between;
+              box-sizing: border-box;
+            ">
+              <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                width: 100%;
+                margin-bottom: 8px;
+              ">
+                <div style="
+                  font-size: 14px;
+                  font-weight: 600;
+                  color: #ffffff;
+                  line-height: 1.2;
+                  max-width: 60%;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  white-space: nowrap;
+                  flex-shrink: 1;
+                ">${userData.username}</div>
+                <div style="
+                  font-size: 28px;
+                  font-weight: 700;
+                  color: #ffffff;
+                  line-height: 1;
+                  min-width: 35px;
+                  text-align: center;
+                  flex-shrink: 0;
+                ">${userData.itemCount}</div>
+              </div>
+              <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                width: 100%;
+                margin-top: auto;
+              ">
+                <div style="
+                  width: 32px;
+                  height: 32px;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  cursor: pointer;
+                  transition: all 0.3s ease;
+                  font-size: 16px;
+                  background: rgba(255, 255, 255, 0.2);
+                  color: #ffffff;
+                  backdrop-filter: blur(10px);
+                  -webkit-backdrop-filter: blur(10px);
+                  flex-shrink: 0;
+                " onclick="event.stopPropagation(); showToast('Opening WhatsApp for ${userData.username}');">💬</div>
+                <div style="
+                  width: 32px;
+                  height: 32px;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  cursor: pointer;
+                  transition: all 0.3s ease;
+                  font-size: 16px;
+                  background: rgba(255, 255, 255, 0.2);
+                  color: #ffffff;
+                  backdrop-filter: blur(10px);
+                  -webkit-backdrop-filter: blur(10px);
+                  flex-shrink: 0;
+                " onclick="event.stopPropagation(); showToast('Opening navigation for ${userData.username}');">🧭</div>
+              </div>
+            </div>
+          `;
+
+          card.addEventListener("click", async () => {
+            console.log("Fallback card clicked:", userData); // Debug log
+            await openOrderModal(userData);
+          });
+
+          card.addEventListener("mouseenter", () => {
+            card.style.transform = "translateY(-4px)";
+            if (userData.isCompleted) {
+              card.style.boxShadow = "0 8px 30px rgba(0, 123, 255, 0.4)";
+            } else if (userData.urgent) {
+              card.style.boxShadow = "0 8px 30px rgba(255, 71, 87, 0.4)";
+            } else {
+              card.style.boxShadow = "0 8px 30px rgba(122, 100, 212, 0.4)";
+            }
+          });
+
+          card.addEventListener("mouseleave", () => {
+            card.style.transform = "translateY(0)";
+            if (userData.isCompleted) {
+              card.style.boxShadow = "0 4px 20px rgba(0, 123, 255, 0.3)";
+            } else if (userData.urgent) {
+              card.style.boxShadow = "0 4px 20px rgba(255, 71, 87, 0.3)";
+            } else {
+              card.style.boxShadow = "0 4px 20px rgba(122, 100, 212, 0.3)";
+            }
+          });
+
+          container.appendChild(card);
+        });
+      }
+
+      // Modal functionality for orders
+      async function openOrderModal(userData) {
+        console.log("openOrderModal called with:", userData); // Debug log
+        currentModalUser = userData;
+        const modal = document.getElementById("userModal");
+
+        if (!modal) {
+          console.error("Modal element not found");
+          return;
+        }
+
+        // Update modal title based on mode
+        const modalTitle = document.querySelector(".modal-title");
+        if (modalTitle) {
+          modalTitle.textContent =
+            currentMode === "pickup"
+              ? "Pick Up from Seller"
+              : "Deliver to Customer";
+        }
+
+        // Update primary CTA button based on mode and completion status
+        const primaryCTABtn = document.getElementById("primaryCTABtn");
+        if (primaryCTABtn) {
+          if (userData.isCompleted) {
+            primaryCTABtn.textContent = "Arrived at Siin Office";
+          } else if (currentMode === "pickup") {
+            primaryCTABtn.textContent = "Mark as Picked Up";
+          } else {
+            primaryCTABtn.textContent = "Mark as Delivered";
+          }
+        }
+
+        // Populate modal with user data
+        const modalAvatar = document.getElementById("modalAvatar");
+        const modalUserName = document.getElementById("modalUserName");
+
+        if (modalAvatar) {
+          modalAvatar.textContent = userData.username.charAt(0).toUpperCase();
+        }
+
+        if (modalUserName) {
+          modalUserName.textContent = userData.username;
+        }
+
+        // Update avatar color based on urgency
+        if (modalAvatar) {
+          if (userData.urgent) {
+            modalAvatar.style.background =
+              "linear-gradient(135deg, #ff4757 0%, #ff3742 100%)";
+            modalAvatar.style.boxShadow = "0 4px 20px rgba(255, 71, 87, 0.3)";
+          } else {
+            modalAvatar.style.background =
+              "linear-gradient(135deg, #7a64d4 0%, #5843b2 100%)";
+            modalAvatar.style.boxShadow = "0 4px 20px rgba(122, 100, 212, 0.3)";
+          }
+        }
+
+        // Add order details section if userData has orders
+        if (userData.orders && userData.orders.length > 0) {
+          await addOrderDetailsToModal(userData);
+        }
+
+        // Show modal
+        console.log("Showing modal"); // Debug log
+        modal.classList.add("show");
+        document.body.style.overflow = "hidden";
+      }
+
+      // Add order details to modal
+      async function addOrderDetailsToModal(userData) {
+        try {
+          const modalBody = document.querySelector(".modal-body");
+          if (!modalBody) return;
+
+          // Remove existing order details if any
+          const existingOrderDetails = modalBody.querySelector(
+            ".order-details-section"
+          );
+          if (existingOrderDetails) {
+            existingOrderDetails.remove();
+          }
+
+          // Check if we have valid order data
+          if (!userData.orders || userData.orders.length === 0) {
+            return;
+          }
+
+          // Check if OrderGroupingService is available
+          if (!window.OrderGroupingService) {
+            console.warn("OrderGroupingService not available");
+            return;
+          }
+
+          // Check Firebase for removed orders
+          const removedOrders = await getRemovedOrdersFromFirebase();
+          console.log("Removed orders from Firebase:", removedOrders);
+
+          // Group orders by customer/seller (opposite of the main grouping)
+          const groupedOrders =
+            userData.groupType === "seller"
+              ? window.OrderGroupingService.groupByCustomer(userData.orders)
+              : window.OrderGroupingService.groupBySeller(userData.orders);
+
+          // Create order details section
+          const orderDetailsSection = document.createElement("div");
+          orderDetailsSection.className = "order-details-section modal-section";
+
+          // Calculate total cash to collect if in delivery mode
+          let totalCashToCollect = 0;
+          let cashCurrency = "";
+
+          if (currentMode === "deliver") {
+            userData.orders.forEach((order) => {
+              if (order.method && order.method.toLowerCase() === "cash") {
+                totalCashToCollect += parseFloat(order.Total || 0);
+                if (!cashCurrency && order.CurrencyCode) {
+                  cashCurrency = order.CurrencyCode;
+                }
+              }
+            });
+          }
+
+          // Create HTML for grouped orders
+          let orderDetailsHTML = '<div class="order-items-list">';
+
+          // Display orders grouped by customer/seller
+          Object.entries(groupedOrders).forEach(([groupName, orders]) => {
+            const groupLabel =
+              userData.groupType === "seller"
+                ? ` ${groupName}`
+                : ` ${groupName}`;
+
+            orderDetailsHTML += `
+              <div class="order-group">
+                <h4 class="order-group-title">${groupLabel}</h4>
+                <div class="order-group-items">
+                  ${orders
+                    .map((order) => {
+                      const isCashPayment =
+                        currentMode === "deliver" &&
+                        order.method &&
+                        order.method.toLowerCase() === "cash";
+
+                      const isRemoved = removedOrders.includes(order.OrderID);
+                      const removedClass = isRemoved ? "removed" : "";
+                      const removeButtonStyle = isRemoved
+                        ? "display: none;"
+                        : "";
+
+                      return `
+                        <div class="order-item-modal ${removedClass}">
+                          <div class="order-item-header">
+                            <span class="order-id">#${
+                              order.OrderID || "N/A"
+                            }</span>
+                          </div>
+                          <div class="order-item-details">
+                            <div class="item-name">${(
+                              order.Item || "N/A"
+                            ).substring(3)}</div>
+                            <div class="item-price" style="color: ${
+                              isCashPayment ? "#ff4757" : "#7a64d4"
+                            }">
+                              ${order.Total || 0} ${order.CurrencyCode || ""}
+                            </div>
+                            <button class="item-remove-btn" onclick="handleItemRemove('${
+                              order.OrderID || "N/A"
+                            }')" title="Remove item" style="${removeButtonStyle}">×</button>
+                          </div>
+                        </div>
+                      `;
+                    })
+                    .join("")}
+                </div>
+              </div>
+            `;
+          });
+
+          orderDetailsHTML += "</div>";
+
+          // Add cash collection total if applicable
+          if (totalCashToCollect > 0) {
+            orderDetailsHTML += `
+              <div class="cash-collection-total">
+                <div class="cash-collection-label">Total Cash to Collect</div>
+                <div class="cash-collection-amount">${totalCashToCollect.toFixed(
+                  2
+                )} ${cashCurrency}</div>
+              </div>
+            `;
+          }
+
+          orderDetailsSection.innerHTML = orderDetailsHTML;
+
+          // Insert before the Actions section
+          const actionsSection = modalBody.querySelector(
+            ".modal-section:last-child"
+          );
+          if (actionsSection) {
+            modalBody.insertBefore(orderDetailsSection, actionsSection);
+          } else {
+            modalBody.appendChild(orderDetailsSection);
+          }
+        } catch (error) {
+          console.error("Error adding order details to modal:", error);
+        }
+      }
+
+      // Get removed orders from Firebase
+      async function getRemovedOrdersFromFirebase() {
+        try {
+          const firebaseUrl =
+            "https://siindrive-default-rtdb.europe-west1.firebasedatabase.app/orders.json";
+
+          const response = await fetch(firebaseUrl);
+          if (!response.ok) {
+            throw new Error(`Firebase fetch failed: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          if (!data) {
+            return [];
+          }
+
+          // Extract order IDs that have been removed
+          const removedOrders = [];
+          Object.values(data).forEach((entry) => {
+            if (entry.status === "Seller Removed" && entry.orderID) {
+              removedOrders.push(entry.orderID);
+            }
+          });
+
+          return removedOrders;
+        } catch (error) {
+          console.error("Error fetching removed orders from Firebase:", error);
+          return []; // Return empty array if fetch fails
+        }
+      }
+
+      // Get picked up orders from Firebase
+      async function getPickedUpOrdersFromFirebase() {
+        try {
+          const firebaseUrl =
+            "https://siindrive-default-rtdb.europe-west1.firebasedatabase.app/orders.json";
+
+          const response = await fetch(firebaseUrl);
+          if (!response.ok) {
+            throw new Error(`Firebase fetch failed: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          if (!data) {
+            return [];
+          }
+
+          // Extract order IDs that have been picked up
+          const pickedUpOrders = [];
+          Object.values(data).forEach((entry) => {
+            if (entry.status === "picked up" && entry.orderID) {
+              pickedUpOrders.push(entry.orderID);
+            }
+          });
+
+          return pickedUpOrders;
+        } catch (error) {
+          console.error(
+            "Error fetching picked up orders from Firebase:",
+            error
+          );
+          return []; // Return empty array if fetch fails
+        }
+      }
+
+      // Get arrived at office orders from Firebase
+      async function getArrivedAtOfficeOrdersFromFirebase() {
+        try {
+          const firebaseUrl =
+            "https://siindrive-default-rtdb.europe-west1.firebasedatabase.app/orders.json";
+
+          const response = await fetch(firebaseUrl);
+          if (!response.ok) {
+            throw new Error(`Firebase fetch failed: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          if (!data) {
+            return [];
+          }
+
+          // Extract order IDs that have arrived at office
+          const arrivedAtOfficeOrders = [];
+          Object.values(data).forEach((entry) => {
+            if (entry.status === "arrived at siin office" && entry.orderID) {
+              arrivedAtOfficeOrders.push(entry.orderID);
+            }
+          });
+
+          return arrivedAtOfficeOrders;
+        } catch (error) {
+          console.error(
+            "Error fetching arrived at office orders from Firebase:",
+            error
+          );
+          return []; // Return empty array if fetch fails
+        }
+      }
+
+      // Handle item removal (updated to support strikethrough and Firebase update)
+      async function handleItemRemove(orderId) {
+        console.log(`Remove item clicked for order: ${orderId}`);
+
+        try {
+          // Find the order item element
+          const orderItems = document.querySelectorAll(".order-item-modal");
+          let orderElement = null;
+
+          orderItems.forEach((item) => {
+            const orderIdElement = item.querySelector(".order-id");
+            if (
+              orderIdElement &&
+              orderIdElement.textContent === `#${orderId}`
+            ) {
+              orderElement = item;
+            }
+          });
+
+          if (!orderElement) {
+            console.error("Order element not found");
+            return;
+          }
+
+          // Apply removed styling
+          orderElement.classList.add("removed");
+
+          // Hide the remove button
+          const removeBtn = orderElement.querySelector(".item-remove-btn");
+          if (removeBtn) {
+            removeBtn.style.display = "none";
+          }
+
+          // Update Firebase with removal status
+          await updateFirebaseOrderStatus(orderId, "Seller Removed");
+
+          // Show success toast
+          showToast(`Order ${orderId} marked as removed`);
+        } catch (error) {
+          console.error("Error removing order:", error);
+          showToast("Failed to remove order. Please try again.");
+        }
+      }
+
+      // Update Firebase order status
+      async function updateFirebaseOrderStatus(orderId, status) {
+        try {
+          // Firebase database URL for orders
+          const firebaseUrl =
+            "https://siindrive-default-rtdb.europe-west1.firebasedatabase.app/orders";
+
+          // Create update data
+          const updateData = {
+            orderID: orderId,
+            status: status,
+            timestamp: new Date().toISOString(),
+            updatedBy: getCurrentUserName() || "Unknown Driver",
+          };
+
+          console.log("Updating Firebase with:", updateData);
+
+          // Send to Firebase - using POST to create a new entry in orders collection
+          const response = await fetch(`${firebaseUrl}.json`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(updateData),
+          });
+
+          if (!response.ok) {
+            throw new Error(`Firebase update failed: ${response.status}`);
+          }
+
+          const result = await response.json();
+          console.log("Firebase update successful:", result);
+        } catch (error) {
+          console.error("Error updating Firebase:", error);
+          throw error;
+        }
+      }
+
+      // Get current user name from localStorage
+      function getCurrentUserName() {
+        try {
+          const currentUser = localStorage.getItem("currentUser");
+          if (currentUser) {
+            const userData = JSON.parse(currentUser);
+            return userData.name || "Unknown Driver";
+          }
+        } catch (error) {
+          console.error("Error getting current user name:", error);
+        }
+        return "Unknown Driver";
+      }
+
+      function closeModal() {
+        const modal = document.getElementById("userModal");
+        modal.classList.remove("show");
+
+        // Restore body scrolling
+        document.body.style.overflow = "";
+
+        // Clear current user
+        currentModalUser = null;
+      }
+
+      function handlePrimaryCTA() {
+        if (currentModalUser && currentModalUser.isCompleted) {
+          handleArrivedAtOffice();
+        } else if (currentMode === "pickup") {
+          handlePickedUp();
+        } else if (currentMode === "deliver") {
+          handleDelivered();
+        }
+      }
+
+      function handleArrivedAtOffice() {
+        if (currentModalUser) {
+          handleOrderStatusUpdate("arrived at office");
+        }
+      }
+
+      function handlePickedUp() {
+        if (currentModalUser) {
+          handleOrderStatusUpdate("picked up");
+        }
+      }
+
+      function handleDelivered() {
+        if (currentModalUser) {
+          handleOrderStatusUpdate("delivered");
+        }
+      }
+
+      // Handle order status updates (picked up or delivered)
+      async function handleOrderStatusUpdate(status) {
+        if (!currentModalUser || !currentModalUser.orders) {
+          return;
+        }
+
+        try {
+          let validOrders;
+
+          if (status === "arrived at office") {
+            // For "arrived at office", we need to update orders from "picked up" to "arrived at siin office"
+            // Only process orders that are currently picked up and not removed
+            const pickedUpOrders = await getPickedUpOrdersFromFirebase();
+            const removedOrders = await getRemovedOrdersFromFirebase();
+
+            // Filter current modal user's orders to only include those that are picked up and not removed
+            validOrders = currentModalUser.orders.filter(
+              (order) =>
+                pickedUpOrders.includes(order.OrderID) &&
+                !removedOrders.includes(order.OrderID)
+            );
+
+            // Update the status to "arrived at siin office"
+            status = "arrived at siin office";
+          } else {
+            // For other statuses, skip removed orders
+            const removedOrders = await getRemovedOrdersFromFirebase();
+            validOrders = currentModalUser.orders.filter(
+              (order) => !removedOrders.includes(order.OrderID)
+            );
+          }
+
+          if (validOrders.length === 0) {
+            showToast("No valid orders to update");
+            closeModal();
+            return;
+          }
+
+          // Update each valid order in Firebase
+          const updatePromises = validOrders.map((order) =>
+            updateFirebaseOrderStatus(order.OrderID, status)
+          );
+
+          await Promise.all(updatePromises);
+
+          showToast(
+            `Marked ${validOrders.length} orders as ${status}: ${currentModalUser.username}`
+          );
+          console.log(`${status} orders for:`, currentModalUser.username);
+
+          // Reload the orders to reflect the changes
+          setTimeout(() => {
+            loadOrdersData(currentMode);
+          }, 1000);
+
+          closeModal();
+        } catch (error) {
+          console.error(`Error updating orders to ${status}:`, error);
+          showToast(`Failed to mark orders as ${status}. Please try again.`);
+        }
+      }
+
+      function handleModalWhatsApp() {
+        if (currentModalUser) {
+          showToast(`Opening WhatsApp for ${currentModalUser.username}`);
+          // In real implementation, this would open WhatsApp with the user's number
+          // window.open(`https://wa.me/${phoneNumber}`, '_blank');
+          closeModal();
+        }
+      }
+
+      function handleModalNavigation() {
+        if (currentModalUser) {
+          showToast(`Opening navigation for ${currentModalUser.username}`);
+          // In real implementation, this would open navigation to the user's location
+          // window.open(`https://maps.google.com/maps?q=${latitude},${longitude}`, '_blank');
+          closeModal();
+        }
+      }
+
+      // Close modal when clicking outside
+      document.addEventListener("click", (event) => {
+        const modal = document.getElementById("userModal");
+        if (event.target === modal) {
+          closeModal();
+        }
+      });
+
+      // Close modal on escape key
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closeModal();
+        }
+      });
+
+      // Toast notification system
+      function showToast(message) {
+        // Remove existing toasts
+        const existingToasts = document.querySelectorAll(".toast");
+        existingToasts.forEach((toast) => toast.remove());
+
+        // Create new toast
+        const toast = document.createElement("div");
+        toast.className = "toast";
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        // Show toast
+        setTimeout(() => toast.classList.add("show"), 100);
+
+        // Hide toast after 3 seconds
+        setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => toast.remove(), 300);
+        }, 3000);
+      }
+
+      // Loading state utility
+      function showLoading(element) {
+        const originalContent = element.innerHTML;
+        element.innerHTML = '<div class="loading-spinner"></div>';
+        return originalContent;
+      }
+
+      function hideLoading(element, originalContent) {
+        element.innerHTML = originalContent;
+      }
+
+      // Sample data - accessible globally for modal functionality
+      const sampleData = [
+        { id: "user1", username: "Ahmed Ali", itemCount: 3, urgent: false },
+        {
+          id: "user2",
+          username: "Sarah Mohammed",
+          itemCount: 7,
+          urgent: true,
+        },
+        {
+          id: "user3",
+          username: "Khalid Hassan",
+          itemCount: 2,
+          urgent: false,
+        },
+        {
+          id: "user4",
+          username: "Fatima Al-Zahra",
+          itemCount: 5,
+          urgent: false,
+        },
+      ];
+
+      // Backward compatibility - fallback to sample data if services aren't available
+      function initializeCardComponent() {
+        const container = document.getElementById("cardContainer");
+
+        // Check if CardComponent is available
+        if (typeof CardComponent === "undefined") {
+          console.error("CardComponent not loaded");
+          // Create fallback cards
+          createFallbackCards(container);
+          return;
+        }
+
+        cardComponent = new CardComponent(container, {
+          onCardClick: (userId, event) => {
+            // Find user data and open modal
+            const userData = sampleData.find((user) => user.id === userId);
+            if (userData) {
+              openModal(userData);
+            }
+          },
+          onWhatsAppClick: (userId, event) => {
+            showToast(`Opening WhatsApp for user: ${userId}`);
+            // In real implementation, this would open WhatsApp with the user's number
+            // window.open(`https://wa.me/${phoneNumber}`, '_blank');
+          },
+          onNavigationClick: (userId, event) => {
+            showToast(`Opening navigation for user: ${userId}`);
+            // In real implementation, this would open navigation to the user's location
+            // window.open(`https://maps.google.com/maps?q=${latitude},${longitude}`, '_blank');
+          },
+        });
+
+        // Set up responsive styles
+        cardComponent.setResponsiveStyles();
+
+        // Add sample data
+        cardComponent.populateCards(sampleData);
+      }
+
+      // Original modal function for backward compatibility
+      function openModal(userData) {
+        currentModalUser = userData;
+        const modal = document.getElementById("userModal");
+
+        // Populate modal with user data
+        document.getElementById("modalAvatar").textContent = userData.username
+          .charAt(0)
+          .toUpperCase();
+        document.getElementById("modalUserName").textContent =
+          userData.username;
+
+        // Update avatar color based on urgency
+        const avatar = document.getElementById("modalAvatar");
+        if (userData.urgent) {
+          avatar.style.background =
+            "linear-gradient(135deg, #ff4757 0%, #ff3742 100%)";
+          avatar.style.boxShadow = "0 4px 20px rgba(255, 71, 87, 0.3)";
+        } else {
+          avatar.style.background =
+            "linear-gradient(135deg, #7a64d4 0%, #5843b2 100%)";
+          avatar.style.boxShadow = "0 4px 20px rgba(122, 100, 212, 0.3)";
+        }
+
+        // Show modal
+        modal.classList.add("show");
+        document.body.style.overflow = "hidden";
+      }
+
+      // Fallback function to create cards manually
+      function createFallbackCards(container) {
+        container.style.cssText = `
+          display: grid;
+          grid-template-columns: repeat(2, 160px);
+          gap: 12px;
+          justify-content: center;
+          margin-bottom: 30px;
+          width: 100%;
+          box-sizing: border-box;
+          padding: 0 16px;
+        `;
+
+        sampleData.forEach((userData) => {
+          const card = document.createElement("div");
+          card.style.cssText = `
+            background: ${
+              userData.urgent
+                ? "linear-gradient(135deg, #ff4757 0%, #ff3742 100%)"
+                : "linear-gradient(135deg, #7a64d4 0%, #5843b2 100%)"
+            };
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 20px ${
+              userData.urgent
+                ? "rgba(255, 71, 87, 0.3)"
+                : "rgba(122, 100, 212, 0.3)"
+            };
+            border: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            color: #ffffff;
+            width: 160px;
+            height: 120px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+          `;
+
+          card.innerHTML = `
+            <div style="
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              width: 100%;
+              justify-content: space-between;
+              box-sizing: border-box;
+            ">
+              <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                width: 100%;
+                margin-bottom: 8px;
+              ">
+                <div style="
+                  font-size: 14px;
+                  font-weight: 600;
+                  color: #ffffff;
+                  line-height: 1.2;
+                  max-width: 60%;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  white-space: nowrap;
+                  flex-shrink: 1;
+                ">${userData.username}</div>
+                <div style="
+                  font-size: 28px;
+                  font-weight: 700;
+                  color: #ffffff;
+                  line-height: 1;
+                  min-width: 35px;
+                  text-align: center;
+                  flex-shrink: 0;
+                ">${userData.itemCount}</div>
+              </div>
+              <div style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                width: 100%;
+                margin-top: auto;
+              ">
+                <div style="
+                  width: 32px;
+                  height: 32px;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  cursor: pointer;
+                  transition: all 0.3s ease;
+                  font-size: 16px;
+                  background: rgba(255, 255, 255, 0.2);
+                  color: #ffffff;
+                  backdrop-filter: blur(10px);
+                  -webkit-backdrop-filter: blur(10px);
+                  flex-shrink: 0;
+                " onclick="event.stopPropagation(); showToast('Opening WhatsApp for user: ${userData.id}');">💬</div>
+                <div style="
+                  width: 32px;
+                  height: 32px;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  cursor: pointer;
+                  transition: all 0.3s ease;
+                  font-size: 16px;
+                  background: rgba(255, 255, 255, 0.2);
+                  color: #ffffff;
+                  backdrop-filter: blur(10px);
+                  -webkit-backdrop-filter: blur(10px);
+                  flex-shrink: 0;
+                " onclick="event.stopPropagation(); showToast('Opening navigation for user: ${userData.id}');">🧭</div>
+              </div>
+            </div>
+          `;
+
+          card.addEventListener("click", () => {
+            openModal(userData);
+          });
+
+          card.addEventListener("mouseenter", () => {
+            card.style.transform = "translateY(-4px)";
+            card.style.boxShadow = userData.urgent
+              ? "0 8px 30px rgba(255, 71, 87, 0.4)"
+              : "0 8px 30px rgba(122, 100, 212, 0.4)";
+          });
+
+          card.addEventListener("mouseleave", () => {
+            card.style.transform = "translateY(0)";
+            card.style.boxShadow = userData.urgent
+              ? "0 4px 20px rgba(255, 71, 87, 0.3)"
+              : "0 4px 20px rgba(122, 100, 212, 0.3)";
+          });
+
+          container.appendChild(card);
+        });
+      }
+
+      // Initialize the page
+      document.addEventListener("DOMContentLoaded", function () {
+        // Retrieve and log user data from localStorage
+        const currentUser = localStorage.getItem("currentUser");
+        if (currentUser) {
+          try {
+            const userData = JSON.parse(currentUser);
+            console.log("=== USER DATA FROM LOGIN ===");
+            console.log("User ID:", userData.id);
+            console.log("User Name:", userData.name);
+            console.log("User Email:", userData.email);
+            console.log("User Type:", userData.type);
+            console.log("Full User Data:", userData);
+            console.log("=============================");
+
+            // Update the user name in the header
+            const logoRight = document.querySelector(".logo-right");
+            if (logoRight && userData.name) {
+              logoRight.textContent = userData.name;
+            }
+          } catch (error) {
+            console.error("Error parsing user data from localStorage:", error);
+          }
+        } else {
+          console.warn(
+            "No user data found in localStorage. User may not be logged in."
+          );
+        }
+
+        // Initialize with pickup mode by default
+        setTimeout(async () => {
+          await loadOrdersData("pickup");
+        }, 100);
+
+        // Add touch event handlers for better mobile experience
+        document.addEventListener("touchstart", function () {}, {
+          passive: true,
+        });
+
+        // Prevent zoom on double tap
+        let lastTouchEnd = 0;
+        document.addEventListener(
+          "touchend",
+          function (event) {
+            const now = new Date().getTime();
+            if (now - lastTouchEnd <= 300) {
+              event.preventDefault();
+            }
+            lastTouchEnd = now;
+          },
+          false
+        );
+
+        // Show welcome message
+        setTimeout(() => {
+          showToast("Welcome Siin Driver");
+        }, 500);
+      });
+
+      // Add viewport height fix for mobile browsers
+      function setVH() {
+        let vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty("--vh", `${vh}px`);
+      }
+
+      setVH();
+      window.addEventListener("resize", setVH);
+
+      // Touch gesture utilities
+      function addSwipeGesture(element, onSwipeLeft, onSwipeRight) {
+        let startX = 0;
+        let startY = 0;
+        let distX = 0;
+        let distY = 0;
+        let threshold = 100; // Minimum distance for swipe
+        let allowedTime = 300; // Maximum time for swipe
+        let elapsedTime = 0;
+        let startTime = 0;
+
+        element.addEventListener(
+          "touchstart",
+          function (e) {
+            const touchobj = e.changedTouches[0];
+            startX = touchobj.pageX;
+            startY = touchobj.pageY;
+            startTime = new Date().getTime();
+          },
+          { passive: true }
+        );
+
+        element.addEventListener(
+          "touchend",
+          function (e) {
+            const touchobj = e.changedTouches[0];
+            distX = touchobj.pageX - startX;
+            distY = touchobj.pageY - startY;
+            elapsedTime = new Date().getTime() - startTime;
+
+            if (elapsedTime <= allowedTime) {
+              if (Math.abs(distX) >= threshold && Math.abs(distY) <= 100) {
+                if (distX > 0 && onSwipeRight) {
+                  onSwipeRight();
+                } else if (distX < 0 && onSwipeLeft) {
+                  onSwipeLeft();
+                }
+              }
+            }
+          },
+          { passive: true }
+        );
+      }
+
+      // Toggle functionality
+      async function setMode(mode) {
+        const toggle = document.getElementById("modeToggle");
+        if (mode === "deliver") {
+          toggle.classList.add("deliver");
+        } else {
+          toggle.classList.remove("deliver");
+        }
+
+        showToast(`Switched to ${mode} mode`);
+
+        // Load appropriate data based on mode
+        await loadOrdersData(mode);
+      }
+
+      // Map button functionality
+      function openMap() {
+        showToast("Opening map...");
+      }
+
+      // Public API functions for card management
+      function addCard(userData) {
+        if (cardComponent) {
+          cardComponent.addCard(userData);
+        }
+      }
+
+      function removeCard(userId) {
+        if (cardComponent) {
+          cardComponent.removeCard(userId);
+        }
+      }
+
+      function updateCard(userId, newData) {
+        if (cardComponent) {
+          cardComponent.updateCard(userId, newData);
+        }
+      }
+
+      function clearCards() {
+        if (cardComponent) {
+          cardComponent.clearCards();
+        }
+      }
+
+      function populateCards(dataArray) {
+        if (cardComponent) {
+          cardComponent.populateCards(dataArray);
+        }
+      }
+
+      function getCardData(userId) {
+        return cardComponent ? cardComponent.getCardData(userId) : null;
+      }
+
+      function getAllCards() {
+        return cardComponent ? cardComponent.getAllCards() : [];
+      }
+
+      // Legacy functions for backward compatibility
+      function handleSquareClick(userId) {
+        showToast(`Selected user: ${userId}`);
+      }
+
+      function openWhatsApp(event, userId) {
+        event.stopPropagation();
+        showToast(`Opening WhatsApp for user: ${userId}`);
+      }
+
+      function openNavigation(event, userId) {
+        event.stopPropagation();
+        showToast(`Opening navigation for user: ${userId}`);
+      }
+
+      // Alias functions for the old API
+      function addSquare(userData) {
+        return addCard(userData);
+      }
+
+      function clearGrid() {
+        return clearCards();
+      }
+
+      function populateGrid(dataArray) {
+        return populateCards(dataArray);
+      }
+    </script>
+  </body>
+</html>

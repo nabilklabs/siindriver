@@ -9,6 +9,7 @@ navbar.innerHTML = `
   <a href="index.html" style="color:#ffcc00;text-decoration:none;font-weight:bold;">Home</a>
   <a href="orders.html" style="color:#ffcc00;text-decoration:none;font-weight:bold;">Orders</a>
   <a href="map.html" style="color:#ffcc00;text-decoration:none;font-weight:bold;">Map</a>
+  <a href="dispatch.html" style="color:#ffcc00;text-decoration:none;font-weight:bold;">Dispatch</a>
 `;
 
 const navbarMount = document.getElementById('navbar');

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dispatch</title>
+    <link rel="stylesheet" href="../styles/main.css" />
+    <style>
+      .tab-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+
+      .tab-nav {
+        display: flex;
+        border-bottom: 2px solid #444;
+        margin-bottom: 20px;
+      }
+
+      .tab-button {
+        background: #232323;
+        color: #f4f4f4;
+        border: none;
+        padding: 12px 24px;
+        cursor: pointer;
+        font-size: 16px;
+        margin-right: 4px;
+        border-radius: 8px 8px 0 0;
+        transition: background 0.3s;
+      }
+
+      .tab-button:hover {
+        background: #333;
+      }
+
+      .tab-button.active {
+        background: #ffcc00;
+        color: #181818;
+      }
+
+      .tab-content {
+        display: none;
+        padding: 20px;
+        background: #232323;
+        border-radius: 8px;
+        min-height: 400px;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      .tab-content h3 {
+        margin-top: 0;
+        color: #ffcc00;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="navbar"></div>
+    <h1>Dispatch</h1>
+
+    <div class="tab-container">
+      <div class="tab-nav">
+        <button class="tab-button active" onclick="showTab('bhPickUp')">
+          BH Pick Up
+        </button>
+        <button class="tab-button" onclick="showTab('bhDelivery')">
+          BH Delivery
+        </button>
+        <button class="tab-button" onclick="showTab('internationalDelivery')">
+          International Delivery
+        </button>
+      </div>
+
+      <div id="bhPickUp" class="tab-content active">
+        <h3>BH PickUp</h3>
+        <div id="bhPickUpCards"></div>
+      </div>
+
+      <div id="bhDelivery" class="tab-content">
+        <h3>BH Delivery</h3>
+        <div id="bhDeliveryCards"></div>
+      </div>
+
+      <div id="internationalDelivery" class="tab-content">
+        <h3>International Delivery</h3>
+        <div id="internationalDeliveryCards"></div>
+      </div>
+    </div>
+
+    <script src="../src/navbar.js"></script>
+    <script type="module">
+      import { DispatchService } from "../src/dispatchService.js";
+      import { BHDeliveryService } from "../src/bhDeliveryService.js";
+      import { InternationalDeliveryService } from "../src/internationalDeliveryService.js";
+
+      // Initialize the dispatch service when the page loads
+      document.addEventListener("DOMContentLoaded", () => {
+        DispatchService.initializeBHPickUp();
+        BHDeliveryService.initializeBHDelivery();
+        InternationalDeliveryService.initializeInternationalDelivery();
+      });
+    </script>
+    <script>
+      function showTab(tabId) {
+        // Hide all tab contents
+        const tabContents = document.querySelectorAll(".tab-content");
+        tabContents.forEach((content) => content.classList.remove("active"));
+
+        // Remove active class from all buttons
+        const tabButtons = document.querySelectorAll(".tab-button");
+        tabButtons.forEach((button) => button.classList.remove("active"));
+
+        // Show selected tab content
+        document.getElementById(tabId).classList.add("active");
+
+        // Add active class to clicked button
+        event.target.classList.add("active");
+      }
+    </script>
+  </body>
+</html>
