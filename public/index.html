@@ -537,9 +537,7 @@
               "currentUser",
               JSON.stringify({
                 id: userId,
-                name: userData.name,
-                email: userData.email,
-                type: userData.type,
+                ...userData
               })
             );
 

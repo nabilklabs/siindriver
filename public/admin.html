@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Siin Admin - Interactive Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; }
+    #map { height: 100vh; width: 100vw; }
+    .leaflet-popup-content { font-size: 16px; font-family: 'Montserrat', sans-serif; }
+    #modeToggle button,
+    #searchBar,
+    .user-rect,
+    #userModal,
+    #userModal * {
+      font-family: 'Montserrat', sans-serif !important;
+    }
+    .custom-marker div {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <!-- Top center toggle -->
+  <div id="modeToggle" style="position:fixed;top:32px;left:50%;transform:translateX(-50%);z-index:1001;display:flex;box-shadow:0 8px 32px 0 rgba(88,67,178,0.2);backdrop-filter:blur(16px);background:rgba(255,255,255,0.18);border-radius:24px;overflow:hidden;border:1px solid rgba(88,67,178,0.18);">
+    <button id="pickupBtn" style="padding:14px 36px;border:none;background:rgba(88,67,178,0.12);color:#5843b2;font-weight:600;font-size:18px;backdrop-filter:blur(8px);box-shadow:none;">Pick Up</button>
+    <button id="deliveryBtn" style="padding:14px 36px;border:none;background:transparent;color:#5843b2;font-weight:600;font-size:18px;backdrop-filter:blur(8px);box-shadow:none;">Delivery</button>
+  </div>
+  <!-- Top left search bar -->
+  <div style="position:fixed;top:32px;left:32px;z-index:1001;">
+    <input id="searchBar" type="text" placeholder="Search..." style="padding:12px 24px;border-radius:18px;border:none;font-size:17px;width:220px;background:rgba(255,255,255,0.25);box-shadow:0 4px 24px rgba(88,67,178,0.08);backdrop-filter:blur(12px);color:#5843b2;font-weight:500;outline:none;" />
+  </div>
+  <!-- Top right user rectangles -->
+  <div id="userRectangles" style="position:fixed;top:32px;right:32px;z-index:1001;display:flex;gap:16px;">
+    <div class="user-rect" data-name="Ali" style="padding:16px 24px;background:rgba(255,255,255,0.22);border-radius:18px;box-shadow:0 4px 24px rgba(88,67,178,0.12);backdrop-filter:blur(12px);color:#5843b2;font-weight:700;font-size:17px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <span>Ali</span>
+      <span style="font-size:15px;color:#5843b2;opacity:0.7;">BHD 10</span>
+    </div>
+    <div class="user-rect" data-name="Sara" style="padding:16px 24px;background:rgba(255,255,255,0.22);border-radius:18px;box-shadow:0 4px 24px rgba(88,67,178,0.12);backdrop-filter:blur(12px);color:#5843b2;font-weight:700;font-size:17px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+      <span>Sara</span>
+      <span style="font-size:15px;color:#5843b2;opacity:0.7;">BHD 10</span>
+    </div>
+  </div>
+  <!-- Modal -->
+  <div id="userModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);backdrop-filter:blur(8px);z-index:2000;align-items:center;justify-content:center;">
+    <div style="background:rgba(255,255,255,0.35);border-radius:24px;box-shadow:0 8px 32px rgba(88,67,178,0.18);padding:32px 40px;min-width:280px;max-width:90vw;text-align:center;backdrop-filter:blur(24px);color:#5843b2;font-size:20px;font-weight:700;position:relative;">
+      <span id="modalUserName"></span><br>
+      <span style="font-size:16px;color:#fff;opacity:0.7;">BHD 10</span>
+      <button onclick="document.getElementById('userModal').style.display='none'" style="position:absolute;top:18px;right:18px;background:rgba(88,67,178,0.12);border:none;border-radius:50%;width:32px;height:32px;color:#5843b2;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(88,67,178,0.08);">&times;</button>
+    </div>
+  </div>
+  <!-- Marker info box -->
+  <div id="markerInfoBox" style="display:none;position:fixed;bottom:32px;left:32px;z-index:1002;background:rgba(255,255,255,0.22);backdrop-filter:blur(12px);border-radius:18px;box-shadow:0 4px 24px rgba(88,67,178,0.12);color:#5843b2;font-weight:700;font-size:17px;padding:18px 28px;"></div>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    // Initialize the map
+    const map = L.map('map').setView([26.081120, 50.545157], 11); // Centered at Siin office
+
+    // Add OpenStreetMap tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+
+    // Add a marker and a radius circle around the specified location
+    // North: 26.262080, 50.533637
+    // South: 26.149547, 50.544632
+    const NorthLat = 26.210000; // moved slightly south
+    const NorthLng = 50.583637;
+
+    const SouthLat = 26.149547; // moved slightly south
+    const SouthLng = 50.544632;
+
+    const radiusMeters = 16990; // 15km radius
+
+    // Draw rectangles instead of circles
+    const northBounds = [
+      [NorthLat - 0.02, NorthLng - 0.15], // Southwest corner
+      [NorthLat + 0.13, NorthLng + 0.14]  // Northeast corner
+    ];
+    L.rectangle(northBounds, {
+      color: 'black',
+      weight: 2,
+      fillColor: '#808588',
+      fillOpacity: 0.2
+    }).addTo(map);
+
+    const southBounds = [
+      [SouthLat - 0.35, SouthLng - 0.112], // Southwest corner
+      [SouthLat + 0.0415, SouthLng + 0.18]  // Northeast corner
+    ];
+    L.rectangle(southBounds, {
+      color: 'purple',
+      weight: 2,
+      fillColor: '#7a64d4',
+      fillOpacity: 0.2
+    }).addTo(map);
+
+    // Add 3 standard but nicer markers with emoji and color
+    const purpleIcon = L.divIcon({
+      className: 'custom-marker',
+      html: `<div style="
+        width:32px;height:32px;border-radius:50%;
+        background:#5843b2;
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:0 2px 8px rgba(88,67,178,0.18);
+        font-size:12px;">
+          📦
+        </div>`
+    });
+    const greenIcon = L.divIcon({
+      className: 'custom-marker',
+      html: `<div style="
+        width:32px;height:32px;border-radius:50%;
+        background:#2ecc40;
+        display:flex;align-items:center;justify-content:center;
+        box-shadow:0 2px 8px rgba(46,204,64,0.18);
+        font-size:12px;">
+          📦
+        </div>`
+    });
+
+    // Add markers with click info
+    const purpleMarker = L.marker([26.12, 50.54], { icon: purpleIcon }).addTo(map);
+    purpleMarker.on('click', function() { showMarkerInfo('Purple Marker', '🚗'); });
+
+    const greenMarker = L.marker([26.15, 50.58], { icon: greenIcon }).addTo(map);
+    greenMarker.on('click', function() { showMarkerInfo('Green Marker', '✅'); });
+
+    // Toggle logic
+    const pickupBtn = document.getElementById('pickupBtn');
+    const deliveryBtn = document.getElementById('deliveryBtn');
+    pickupBtn.onclick = function() {
+      pickupBtn.style.background = 'rgba(88,67,178,0.12)';
+      deliveryBtn.style.background = 'transparent';
+    };
+    deliveryBtn.onclick = function() {
+      deliveryBtn.style.background = 'rgba(88,67,178,0.12)';
+      pickupBtn.style.background = 'transparent';
+    };
+    // Modal logic for user rectangles (show cashLogs for selected user)
+    async function handleUserRectClick(userName) {
+      // Fetch cashLogs for this user
+      let logsHtml = '<div style="margin-top:18px;text-align:left;font-size:15px;color:#5843b2;max-height:260px;overflow-y:auto;">';
+      try {
+        const resp = await fetch('https://siindrive-default-rtdb.europe-west1.firebasedatabase.app/cashLogs.json');
+        if (resp.ok) {
+          const logs = await resp.json();
+          const userLogs = Object.values(logs || {}).filter(l => l.collectedBy === userName);
+          if (userLogs.length === 0) {
+            logsHtml += '<b>No cash logs found for this user.</b>';
+          } else {
+            userLogs.forEach(log => {
+              const date = log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Unknown date';
+              logsHtml += `<div style='margin-bottom:12px;padding-bottom:8px;'>
+                <b>Order:</b> ${log.orderID}<br>
+                <b>Amount:</b> BHD ${log.amount}<br>
+                <b>Date:</b> ${date}
+              </div>`;
+            });
+          }
+        } else {
+          logsHtml += '<span style="color:#ff4757">Failed to load cash logs</span>';
+        }
+      } catch (e) {
+        logsHtml += '<span style="color:#ff4757">Error loading cash logs</span>';
+      }
+      logsHtml += '</div>';
+      // Show modal and inject logs
+      const modal = document.getElementById('userModal');
+      modal.style.display = 'flex';
+      // Set modal content (replace innerHTML of modal content, not just modalUserName)
+      const modalContent = modal.querySelector('div');
+      modalContent.innerHTML = `
+        <span id='modalUserName'>${userName}</span><br>
+        <span style='font-size:16px;color:#5843b2;opacity:0.7;'>Cash Logs</span>
+        ${logsHtml}
+        <button id='reconcileBtn' style="margin-top:18px;padding:10px 24px;background:#5843b2;color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:600;box-shadow:0 2px 8px rgba(88,67,178,0.12);cursor:pointer;">Reconcile</button>
+        <button onclick="document.getElementById('userModal').style.display='none'" style="position:absolute;top:18px;right:18px;background:rgba(88,67,178,0.12);border:none;border-radius:50%;width:32px;height:32px;color:#5843b2;font-size:20px;cursor:pointer;box-shadow:0 2px 8px rgba(88,67,178,0.08);">&times;</button>
+      `;
+      // Add reconcile logic
+      document.getElementById('reconcileBtn').onclick = async function() {
+        // Find user id by name
+        try {
+          const resp = await fetch('https://siindrive-default-rtdb.europe-west1.firebasedatabase.app/users.json');
+          if (!resp.ok) throw new Error('Failed to fetch users');
+          const users = await resp.json();
+          const entry = Object.entries(users || {}).find(([id, user]) => user && user.name === userName);
+          if (!entry) throw new Error('User not found');
+          const [userId, userObj] = entry;
+          // Set wallet to 0
+          await fetch(`https://siindrive-default-rtdb.europe-west1.firebasedatabase.app/users/${userId}/wallet.json`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(0)
+          });
+          // Update modal and rectangles
+          updateUserRectangles();
+          alert('Wallet reconciled to 0 for ' + userName);
+          modal.style.display = 'none';
+        } catch (e) {
+          alert('Failed to reconcile wallet: ' + e.message);
+        }
+      };
+    }
+
+    // Update user rectangles to use new handler
+    async function updateUserRectangles() {
+      const container = document.getElementById('userRectangles');
+      if (!container) return;
+      container.innerHTML = '';
+      try {
+        const resp = await fetch('https://siindrive-default-rtdb.europe-west1.firebasedatabase.app/users.json');
+        if (!resp.ok) return;
+        const users = await resp.json();
+        Object.entries(users || {}).forEach(([id, user]) => {
+          if (!user || !user.name || typeof user.wallet === 'undefined') return;
+          const div = document.createElement('div');
+          div.className = 'user-rect';
+          div.setAttribute('data-name', user.name);
+          div.style.cssText = `padding:16px 24px;background:rgba(255,255,255,0.22);border-radius:18px;box-shadow:0 4px 24px rgba(88,67,178,0.12);backdrop-filter:blur(12px);color:#5843b2;font-weight:700;font-size:17px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;`;
+          div.innerHTML = `<span>${user.name}</span><span style='font-size:15px;color:#5843b2;opacity:0.7;'>BHD ${user.wallet}</span>`;
+          div.onclick = function() { handleUserRectClick(user.name); };
+          container.appendChild(div);
+        });
+      } catch (e) {
+        container.innerHTML = '<span style="color:#ff4757">Failed to load users</span>';
+      }
+    }
+    updateUserRectangles();
+
+    // Add a bottom left info rectangle for marker clicks
+    const markerInfo = document.createElement('div');
+    markerInfo.id = 'markerInfoBox';
+    markerInfo.style.position = 'fixed';
+    markerInfo.style.bottom = '32px';
+    markerInfo.style.left = '32px';
+    markerInfo.style.zIndex = '1002';
+    markerInfo.style.background = 'rgba(255,255,255,0.22)';
+    markerInfo.style.backdropFilter = 'blur(12px)';
+    markerInfo.style.borderRadius = '18px';
+    markerInfo.style.boxShadow = '0 4px 24px rgba(88,67,178,0.12)';
+    markerInfo.style.color = '#5843b2';
+    markerInfo.style.fontWeight = '700';
+    markerInfo.style.fontSize = '17px';
+    markerInfo.style.padding = '18px 28px';
+    markerInfo.style.display = 'none';
+    markerInfo.style.fontFamily = "'Montserrat', sans-serif";
+    document.body.appendChild(markerInfo);
+
+    function showMarkerInfo(text, emoji) {
+      markerInfo.innerHTML = `<span style='font-size:22px;margin-right:10px;'>${emoji}</span>${text}`;
+      markerInfo.style.display = 'block';
+      setTimeout(() => { markerInfo.style.display = 'none'; }, 200000); // Hide after 200 seconds
+    }
+
+    // Fetch and display orders as markers on the map using the API
+    import('https://api.test.siin.shop/v3/orders/public/get-24-hour-order?key=SIINSHOP')
+      .then(async () => {
+        try {
+          const resp = await fetch('https://api.test.siin.shop/v3/orders/public/get-24-hour-order?key=SIINSHOP');
+          if (!resp.ok) throw new Error('Failed to fetch orders');
+          const data = await resp.json();
+          // Group and display orders
+          (data.orders || []).forEach(order => {
+            // Determine marker color and emoji
+            let color = '#7a64d4', emoji = '📦';
+            if (order.DeliveryStatus === 'Picked Up') {
+              color = '#007bff'; emoji = '✅';
+            } else if (order.DeliveryStatus === 'Arrived at Siin') {
+              color = '#25d366'; emoji = '🚚';
+            } else if (order.method && order.method.toLowerCase() === 'cash') {
+              color = '#ff4757'; emoji = '💵';
+            }
+            // Use Seller/Customer location
+            let lat = parseFloat(order.SellerLatitude || order.latitude);
+            let lng = parseFloat(order.SellerLongitude || order.longitude);
+            if (order.CustomerLatitude && order.CustomerLongitude) {
+              lat = parseFloat(order.CustomerLatitude);
+              lng = parseFloat(order.CustomerLongitude);
+            }
+            if (!lat || !lng) return;
+            const icon = L.divIcon({
+              className: 'custom-marker',
+              html: `<div style="width:32px;height:32px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px ${color};font-size:18px;">${emoji}</div>`
+            });
+            const marker = L.marker([lat, lng], { icon }).addTo(map);
+            marker.on('click', function() {
+              showMarkerInfo(`Order: ${order.orderID || order.id}<br>Status: ${order.DeliveryStatus}<br>Type: ${order.DeliveryStatus}<br>Method: ${order.method || ''}`, emoji);
+            });
+          });
+        } catch (e) {
+          console.error('Error displaying orders on map:', e);
+        }
+      });
+  </script>
+</body>
+</html>

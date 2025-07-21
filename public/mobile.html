@@ -683,21 +683,20 @@
         }
       }
     </style>
+    <script type="module">
+        import { updateOrderStatus } from "./components/updateOrderStatus.js";
+        window.updateOrderStatus = updateOrderStatus; // Make available globally
+    </script>
   </head>
   <body>
     <div class="mobile-container">
       <div class="mobile-content">
         <div class="logo-container">
-          <div class="logo-left">BHD 0</div>
-          <div class="logo-center">
-            <img
-              src="../assets/White Logo.png"
-              alt="SIIN Driver"
-              class="logo-image"
-            />
-          </div>
-          <div class="logo-right">{userdata.name}</div>
+          <div class="logo-left">BHD </div>
+          <div class="logo-center"></div>
+          <div class="logo-right" id="logoRightName"></div>
         </div>
+        <div id="userDetails" style="color:#fff; font-size:13px; margin-bottom:10px;"></div>
 
         <div class="toggle-container">
           <div class="toggle-switch" id="modeToggle">
@@ -770,6 +769,9 @@
       window.OrderGroupingService = OrderGroupingService;
       window.fetchOrders = fetchOrders;
     </script>
+    <script type="module">
+      import { updateOrderStatus } from "./components/updateOrderStatus.js";
+    </script>
     <script>
       // Mobile-specific JavaScript functionality
       let cardComponent; // Will hold our CardComponent instance
@@ -781,29 +783,33 @@
       async function loadOrdersData(mode) {
         try {
           currentMode = mode;
-          console.log(`Loading orders for mode: ${mode}`);
-
+          let orders = [];
           if (mode === "pickup") {
             // Load BH Pick Up orders (Seller Country = BH)
-            const orders = await window.DispatchService.loadBHPickUpOrders();
-            console.log("Pickup orders loaded:", orders.length);
-            const processedData =
-              window.OrderGroupingService.processBHPickupOrders(orders);
+            orders = await window.DispatchService.loadBHPickUpOrders();
+            // Only show orders with DeliveryStatus "Pending", "PENDING", or "Picked Up"
+            orders = orders.filter(
+              (order) =>
+                order.DeliveryStatus === "PENDING" ||
+                order.DeliveryStatus === "Pending" ||
+                order.DeliveryStatus === "Picked Up"
+            );
+            const processedData = window.OrderGroupingService.processBHPickupOrders(orders);
             currentOrders = orders;
             await displayOrdersAsCards(processedData, "seller");
           } else if (mode === "deliver") {
             // Load BH Delivery orders (Seller Country = BH AND Customer Country = BH)
-            const orders =
-              await window.BHDeliveryService.loadBHDeliveryOrders();
-            console.log("Delivery orders loaded:", orders.length);
-            const processedData =
-              window.OrderGroupingService.processBHDeliveryOrders(orders);
+            orders = await window.BHDeliveryService.loadBHDeliveryOrders();
+            // Only show orders with DeliveryStatus "Arrived at Siin"
+            orders = orders.filter(
+              (order) => order.DeliveryStatus === "Arrived at Siin"
+            );
+            const processedData = window.OrderGroupingService.processBHDeliveryOrders(orders);
             currentOrders = orders;
             await displayOrdersAsCards(processedData, "customer");
           }
         } catch (error) {
           console.error("Error loading orders data:", error);
-          // Fallback to sample data if API fails
           initializeCardComponent();
         }
       }
@@ -823,71 +829,42 @@
           return;
         }
 
-        // Get picked up orders from Firebase
-        const pickedUpOrders = await getPickedUpOrdersFromFirebase();
-        console.log("Picked up orders from Firebase:", pickedUpOrders);
-
-        // Get removed orders from Firebase
-        const removedOrders = await getRemovedOrdersFromFirebase();
-        console.log("Removed orders from Firebase:", removedOrders);
-
-        // Get arrived at office orders from Firebase
-        const arrivedAtOfficeOrders =
-          await getArrivedAtOfficeOrdersFromFirebase();
-        console.log(
-          "Arrived at office orders from Firebase:",
-          arrivedAtOfficeOrders
-        );
-
-        // Filter out orders that have arrived at office from pickup mode
-        let filteredGroupedOrders = processedData.groupedOrders;
-        if (currentMode === "pickup") {
-          filteredGroupedOrders = processedData.groupedOrders
-            .map(([username, orders]) => {
-              // Filter out orders that have arrived at office
-              const filteredOrders = orders.filter(
-                (order) => !arrivedAtOfficeOrders.includes(order.OrderID)
-              );
-              return [username, filteredOrders];
-            })
-            .filter(([username, orders]) => orders.length > 0); // Remove groups with no orders
-        }
-
-        // Check if we have any filtered orders to display
-        if (filteredGroupedOrders.length === 0) {
-          container.innerHTML =
-            '<p style="text-align: center; color: #888; padding: 20px;">No orders found</p>';
-          return;
-        }
+        // No Firebase status fetches; use DeliveryStatus from API
 
         // Create card data from filtered orders
-        const cardData = filteredGroupedOrders.map(([username, orders]) => {
-          // Check for cash payments in delivery mode
+        const cardData = processedData.groupedOrders.map(([username, orders]) => {
+          // Determine if any order is urgent
           const hasCashPayment =
             currentMode === "deliver" &&
             orders.some(
               (order) => order.method && order.method.toLowerCase() === "cash"
             );
 
-          // Check if any orders for this user have been picked up
-          const hasPickedUpOrders = orders.some((order) =>
-            pickedUpOrders.includes(order.OrderID)
+          // Use DeliveryStatus for status
+          // If any order is Picked Up, mark as picked up (blue)
+          // If all orders are PENDING, mark as normal (purple)
+          // If all orders are Picked Up, mark as completed (blue)
+          // If mixed, treat as not completed (purple)
+          const allPickedUp = orders.every(
+            (order) => order.DeliveryStatus === "Picked Up"
+          );
+          const anyPickedUp = orders.some(
+            (order) => order.DeliveryStatus === "Picked Up"
+          );
+          const allPending = orders.every(
+            (order) => order.DeliveryStatus === "PENDING"
           );
 
-          // Check if ALL orders for this user have been removed by seller
-          const allOrdersRemoved = orders.every((order) =>
-            removedOrders.includes(order.OrderID)
-          );
-
-          // Determine if this group is completed based on mode
+          // Card color logic
           let isCompleted = false;
-          if (currentMode === "pickup") {
-            // In pickup mode, completed means picked up or all removed
-            isCompleted = hasPickedUpOrders || allOrdersRemoved;
-          } else if (currentMode === "deliver") {
-            // In delivery mode, completed means delivered (you can add delivered status logic here)
-            // For now, we'll keep it as false since delivery completion isn't implemented yet
-            isCompleted = false;
+          let cardStatus = "normal"; // purple
+          if (allPickedUp) {
+            isCompleted = true;
+            cardStatus = "pickedup"; // blue
+          } else if (anyPickedUp) {
+            cardStatus = "pickedup"; // blue
+          } else if (allPending) {
+            cardStatus = "normal"; // purple
           }
 
           return {
@@ -902,16 +879,17 @@
             orders: orders,
             groupType: groupType,
             hasCashPayment: hasCashPayment,
-            hasPickedUpOrders: hasPickedUpOrders,
-            allOrdersRemoved: allOrdersRemoved,
             isCompleted: isCompleted,
+            cardStatus: cardStatus,
           };
         });
 
-        // Sort cards: completed orders (picked up or all removed) at the bottom, others at the top
+        // Sort cards: completed (picked up) at the bottom, others at the top
         cardData.sort((a, b) => {
-          if (a.isCompleted && !b.isCompleted) return 1;
-          if (!a.isCompleted && b.isCompleted) return -1;
+          // Blue cards (picked up) at the bottom
+          if (a.cardStatus === "pickedup" && b.cardStatus !== "pickedup") return 1;
+          if (a.cardStatus !== "pickedup" && b.cardStatus === "pickedup") return -1;
+          // If both are blue or both are not blue, preserve order
           return 0;
         });
 
@@ -919,27 +897,22 @@
         if (typeof CardComponent !== "undefined") {
           cardComponent = new CardComponent(container, {
             onCardClick: async (userId, event) => {
-              console.log("Card clicked:", userId); // Debug log
               const userData = cardData.find((user) => user.id === userId);
               if (userData) {
-                console.log("Found user data:", userData); // Debug log
                 await openOrderModal(userData);
-              } else {
-                console.log("User data not found for:", userId); // Debug log
               }
             },
             onWhatsAppClick: (userId, event) => {
               const userData = cardData.find((user) => user.id === userId);
               if (userData) {
-                showToast(`Opening WhatsApp for ${userData.username}`);
-                // In real implementation, open WhatsApp with user's number
+                // showToast(`Opening WhatsApp for blah blah ${userData.username}`);
+                openWhatsApp(null, userData.id);
               }
             },
             onNavigationClick: (userId, event) => {
               const userData = cardData.find((user) => user.id === userId);
               if (userData) {
                 showToast(`Opening navigation for ${userData.username}`);
-                // In real implementation, open navigation to user's location
               }
             },
           });
@@ -967,24 +940,17 @@
         cardData.forEach((userData) => {
           const card = document.createElement("div");
 
-          // Determine background color based on status
+          // Determine background color based on DeliveryStatus
           let backgroundColor;
           let boxShadowColor;
-
-          if (userData.isCompleted) {
-            // Blue background for completed orders (picked up or all removed)
-            backgroundColor =
-              "linear-gradient(135deg, #007bff 0%, #0056b3 100%)";
+          if (userData.cardStatus === "pickedup") {
+            backgroundColor = "linear-gradient(135deg, #007bff 0%, #0056b3 100%)";
             boxShadowColor = "rgba(0, 123, 255, 0.3)";
           } else if (userData.urgent) {
-            // Red background for urgent orders
-            backgroundColor =
-              "linear-gradient(135deg, #ff4757 0%, #ff3742 100%)";
+            backgroundColor = "linear-gradient(135deg, #ff4757 0%, #ff3742 100%)";
             boxShadowColor = "rgba(255, 71, 87, 0.3)";
           } else {
-            // Purple background for normal orders
-            backgroundColor =
-              "linear-gradient(135deg, #7a64d4 0%, #5843b2 100%)";
+            backgroundColor = "linear-gradient(135deg, #7a64d4 0%, #5843b2 100%)";
             boxShadowColor = "rgba(122, 100, 212, 0.3)";
           }
 
@@ -1006,94 +972,115 @@
             justify-content: space-between;
           `;
 
-          card.innerHTML = `
-            <div style="
-              display: flex;
-              flex-direction: column;
-              height: 100%;
-              width: 100%;
-              justify-content: space-between;
-              box-sizing: border-box;
-            ">
-              <div style="
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-start;
-                width: 100%;
-                margin-bottom: 8px;
-              ">
-                <div style="
-                  font-size: 14px;
-                  font-weight: 600;
-                  color: #ffffff;
-                  line-height: 1.2;
-                  max-width: 60%;
-                  overflow: hidden;
-                  text-overflow: ellipsis;
-                  white-space: nowrap;
-                  flex-shrink: 1;
-                ">${userData.username}</div>
-                <div style="
-                  font-size: 28px;
-                  font-weight: 700;
-                  color: #ffffff;
-                  line-height: 1;
-                  min-width: 35px;
-                  text-align: center;
-                  flex-shrink: 0;
-                ">${userData.itemCount}</div>
-              </div>
-              <div style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                width: 100%;
-                margin-top: auto;
-              ">
-                <div style="
-                  width: 32px;
-                  height: 32px;
-                  border-radius: 50%;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  cursor: pointer;
-                  transition: all 0.3s ease;
-                  font-size: 16px;
-                  background: rgba(255, 255, 255, 0.2);
-                  color: #ffffff;
-                  backdrop-filter: blur(10px);
-                  -webkit-backdrop-filter: blur(10px);
-                  flex-shrink: 0;
-                " onclick="event.stopPropagation(); showToast('Opening WhatsApp for ${userData.username}');">💬</div>
-                <div style="
-                  width: 32px;
-                  height: 32px;
-                  border-radius: 50%;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  cursor: pointer;
-                  transition: all 0.3s ease;
-                  font-size: 16px;
-                  background: rgba(255, 255, 255, 0.2);
-                  color: #ffffff;
-                  backdrop-filter: blur(10px);
-                  -webkit-backdrop-filter: blur(10px);
-                  flex-shrink: 0;
-                " onclick="event.stopPropagation(); showToast('Opening navigation for ${userData.username}');">🧭</div>
-              </div>
-            </div>
-          `;
+          // Card content container
+          const content = document.createElement("div");
+          content.style.display = "flex";
+          content.style.flexDirection = "column";
+          content.style.height = "100%";
+          content.style.width = "100%";
+          content.style.justifyContent = "space-between";
+          content.style.boxSizing = "border-box";
+
+          // Top row: username and item count
+          const topRow = document.createElement("div");
+          topRow.style.display = "flex";
+          topRow.style.justifyContent = "space-between";
+          topRow.style.alignItems = "flex-start";
+          topRow.style.width = "100%";
+          topRow.style.marginBottom = "8px";
+
+          const usernameDiv = document.createElement("div");
+          usernameDiv.style.fontSize = "14px";
+          usernameDiv.style.fontWeight = "600";
+          usernameDiv.style.color = "#ffffff";
+          usernameDiv.style.lineHeight = "1.2";
+          usernameDiv.style.maxWidth = "60%";
+          usernameDiv.style.overflow = "hidden";
+          usernameDiv.style.textOverflow = "ellipsis";
+          usernameDiv.style.whiteSpace = "nowrap";
+          usernameDiv.style.flexShrink = "1";
+          usernameDiv.textContent = userData.username;
+
+          const itemCountDiv = document.createElement("div");          itemCountDiv.style.fontSize = "28px";
+          itemCountDiv.style.fontWeight = "700";
+          itemCountDiv.style.color = "#ffffff";
+          itemCountDiv.style.lineHeight = "1";
+          itemCountDiv.style.minWidth = "35px";
+          itemCountDiv.style.textAlign = "center";
+          itemCountDiv.style.flexShrink = "0";
+          itemCountDiv.textContent = userData.itemCount;
+
+          topRow.appendChild(usernameDiv);
+          topRow.appendChild(itemCountDiv);
+
+          // Bottom row: WhatsApp and navigation buttons
+          const bottomRow = document.createElement("div");
+          bottomRow.style.display = "flex";
+          bottomRow.style.justifyContent = "space-between";
+          bottomRow.style.alignItems = "center";
+          bottomRow.style.width = "100%";
+          bottomRow.style.marginTop = "auto";
+
+          // WhatsApp button
+          const whatsappBtn = document.createElement("div");
+          whatsappBtn.style.width = "32px";
+          whatsappBtn.style.height = "32px";
+          whatsappBtn.style.borderRadius = "50%";
+          whatsappBtn.style.display = "flex";
+          whatsappBtn.style.alignItems = "center";
+          whatsappBtn.style.justifyContent = "center";
+          whatsappBtn.style.cursor = "pointer";
+          whatsappBtn.style.transition = "all 0.3s ease";
+          whatsappBtn.style.fontSize = "16px";
+          whatsappBtn.style.background = "rgba(255, 255, 255, 0.2)";
+          whatsappBtn.style.color = "#ffffff";
+          whatsappBtn.style.backdropFilter = "blur(10px)";
+          whatsappBtn.style.webkitBackdropFilter = "blur(10px)";
+          whatsappBtn.style.flexShrink = "0";
+          whatsappBtn.textContent = "💬";
+          whatsappBtn.title = "WhatsApp";
+          whatsappBtn.addEventListener("click", (event) => {
+            event.stopPropagation();
+            openWhatsApp(event, userData.id);
+          });
+
+          // Navigation button
+          const navBtn = document.createElement("div");
+          navBtn.style.width = "32px";
+          navBtn.style.height = "32px";
+          navBtn.style.borderRadius = "50%";
+          navBtn.style.display = "flex";
+          navBtn.style.alignItems = "center";
+          navBtn.style.justifyContent = "center";
+          navBtn.style.cursor = "pointer";
+          navBtn.style.transition = "all 0.3s ease";
+          navBtn.style.fontSize = "16px";
+          navBtn.style.background = "rgba(255, 255, 255, 0.2)";
+          navBtn.style.color = "#ffffff";
+          navBtn.style.backdropFilter = "blur(10px)";
+          navBtn.style.webkitBackdropFilter = "blur(10px)";
+          navBtn.style.flexShrink = "0";
+          navBtn.textContent = "🧭";
+          navBtn.title = "Navigation";
+          navBtn.addEventListener("click", (event) => {
+            event.stopPropagation();
+            openNavigation(event, userData.id);
+          });
+
+          bottomRow.appendChild(whatsappBtn);
+          bottomRow.appendChild(navBtn);
+
+          content.appendChild(topRow);
+          content.appendChild(bottomRow);
+          card.appendChild(content);
 
           card.addEventListener("click", async () => {
-            console.log("Fallback card clicked:", userData); // Debug log
             await openOrderModal(userData);
           });
 
           card.addEventListener("mouseenter", () => {
             card.style.transform = "translateY(-4px)";
-            if (userData.isCompleted) {
+            if (userData.cardStatus === "pickedup") {
               card.style.boxShadow = "0 8px 30px rgba(0, 123, 255, 0.4)";
             } else if (userData.urgent) {
               card.style.boxShadow = "0 8px 30px rgba(255, 71, 87, 0.4)";
@@ -1104,7 +1091,7 @@
 
           card.addEventListener("mouseleave", () => {
             card.style.transform = "translateY(0)";
-            if (userData.isCompleted) {
+            if (userData.cardStatus === "pickedup") {
               card.style.boxShadow = "0 4px 20px rgba(0, 123, 255, 0.3)";
             } else if (userData.urgent) {
               card.style.boxShadow = "0 4px 20px rgba(255, 71, 87, 0.3)";
@@ -1140,12 +1127,15 @@
         // Update primary CTA button based on mode and completion status
         const primaryCTABtn = document.getElementById("primaryCTABtn");
         if (primaryCTABtn) {
-          if (userData.isCompleted) {
-            primaryCTABtn.textContent = "Arrived at Siin Office";
+          if (userData.cardStatus === "pickedup") {
+            primaryCTABtn.textContent = "Arrived at Siin";
+            primaryCTABtn.onclick = handleArrivedAtSiin;
           } else if (currentMode === "pickup") {
             primaryCTABtn.textContent = "Mark as Picked Up";
+            primaryCTABtn.onclick = handlePickedUp;
           } else {
             primaryCTABtn.textContent = "Mark as Delivered";
+            primaryCTABtn.onclick = handleDelivered;
           }
         }
 
@@ -1271,7 +1261,7 @@
                           <div class="order-item-header">
                             <span class="order-id">#${
                               order.OrderID || "N/A"
-                            }</span>
+                            } - ${order.DeliveryStatus}</span>
                           </div>
                           <div class="order-item-details">
                             <div class="item-name">${(
@@ -1282,9 +1272,11 @@
                             }">
                               ${order.Total || 0} ${order.CurrencyCode || ""}
                             </div>
+                            <!--
                             <button class="item-remove-btn" onclick="handleItemRemove('${
                               order.OrderID || "N/A"
-                            }')" title="Remove item" style="${removeButtonStyle}">×</button>
+                            }')" title="Remove item" style="${removeButtonStyle}"></button>
+                            -->
                           </div>
                         </div>
                       `;
@@ -1567,60 +1559,38 @@
         if (!currentModalUser || !currentModalUser.orders) {
           return;
         }
-
         try {
-          let validOrders;
-
-          if (status === "arrived at office") {
-            // For "arrived at office", we need to update orders from "picked up" to "arrived at siin office"
-            // Only process orders that are currently picked up and not removed
-            const pickedUpOrders = await getPickedUpOrdersFromFirebase();
-            const removedOrders = await getRemovedOrdersFromFirebase();
-
-            // Filter current modal user's orders to only include those that are picked up and not removed
-            validOrders = currentModalUser.orders.filter(
-              (order) =>
-                pickedUpOrders.includes(order.OrderID) &&
-                !removedOrders.includes(order.OrderID)
-            );
-
-            // Update the status to "arrived at siin office"
-            status = "arrived at siin office";
+          // Map status to backend action
+          let action = null;
+          if (
+            status === "arrived at office" ||
+            status === "arrived at siin office" ||
+            status === "Arrived at Siin"
+          ) {
+            action = "Arrived at Siin";
+          } else if (status === "picked up" || status === "Picked Up") {
+            action = "Picked Up";
+          } else if (status === "delivered" || status === "Delivered") {
+            action = "Delivered";
           } else {
-            // For other statuses, skip removed orders
-            const removedOrders = await getRemovedOrdersFromFirebase();
-            validOrders = currentModalUser.orders.filter(
-              (order) => !removedOrders.includes(order.OrderID)
-            );
-          }
-
-          if (validOrders.length === 0) {
-            showToast("No valid orders to update");
-            closeModal();
+            showToast("Unknown status action");
             return;
           }
-
-          // Update each valid order in Firebase
-          const updatePromises = validOrders.map((order) =>
-            updateFirebaseOrderStatus(order.OrderID, status)
-          );
-
-          await Promise.all(updatePromises);
-
-          showToast(
-            `Marked ${validOrders.length} orders as ${status}: ${currentModalUser.username}`
-          );
-          console.log(`${status} orders for:`, currentModalUser.username);
-
-          // Reload the orders to reflect the changes
-          setTimeout(() => {
-            loadOrdersData(currentMode);
-          }, 1000);
-
-          closeModal();
+          const result = await updateOrderStatus(currentModalUser.orders, action);
+          if (result.success) {
+            showToast(`Marked ${result.count} orders as ${action}: ${currentModalUser.username}`);
+            setTimeout(() => {
+              loadOrdersData(currentMode);
+            }, 1000);
+            closeModal();
+          } else {
+            showToast(result.error || "Failed to update orders");
+            closeModal();
+          }
         } catch (error) {
-          console.error(`Error updating orders to ${status}:`, error);
-          showToast(`Failed to mark orders as ${status}. Please try again.`);
+          console.error("Error updating orders to backend:", error);
+          showToast("Failed to mark orders as updated. Please try again.");
+          closeModal();
         }
       }
 
@@ -1689,29 +1659,6 @@
       function hideLoading(element, originalContent) {
         element.innerHTML = originalContent;
       }
-
-      // Sample data - accessible globally for modal functionality
-      const sampleData = [
-        { id: "user1", username: "Ahmed Ali", itemCount: 3, urgent: false },
-        {
-          id: "user2",
-          username: "Sarah Mohammed",
-          itemCount: 7,
-          urgent: true,
-        },
-        {
-          id: "user3",
-          username: "Khalid Hassan",
-          itemCount: 2,
-          urgent: false,
-        },
-        {
-          id: "user4",
-          username: "Fatima Al-Zahra",
-          itemCount: 5,
-          urgent: false,
-        },
-      ];
 
       // Backward compatibility - fallback to sample data if services aren't available
       function initializeCardComponent() {
@@ -1924,6 +1871,42 @@
         });
       }
 
+      // Fetch and display all userData fields from Firebase for the logged-in user
+      async function displayUserDetails() {
+        let userName = null;
+        try {
+          const currentUser = localStorage.getItem("currentUser");
+          if (currentUser) {
+            const userData = JSON.parse(currentUser);
+            userName = userData.name;
+            // Set name in logo right
+            const logoRight = document.getElementById("logoRightName");
+            if (logoRight) logoRight.textContent = userName;
+          }
+        } catch (e) {}
+        if (!userName) return;
+        try {
+          const resp = await fetch("https://siindrive-default-rtdb.europe-west1.firebasedatabase.app/users.json");
+          if (!resp.ok) return;
+          const users = await resp.json();
+          let userData = null;
+          for (const user of Object.values(users || {})) {
+            if (user.name === userName) {
+              userData = user;
+              break;
+            }
+          }
+          if (userData) {
+            let html = '<b>Driver Info:</b><br>';
+            for (const [key, value] of Object.entries(userData)) {
+              html += `<span style='color:#ffcc00'>${key}</span>: ${value}<br>`;
+            }
+            document.getElementById("userDetails").innerHTML = html;
+          }
+        } catch (e) {}
+      }
+      displayUserDetails();
+
       // Initialize the page
       document.addEventListener("DOMContentLoaded", function () {
         // Retrieve and log user data from localStorage
@@ -1934,7 +1917,7 @@
             console.log("=== USER DATA FROM LOGIN ===");
             console.log("User ID:", userData.id);
             console.log("User Name:", userData.name);
-            console.log("User Email:", userData.email);
+            console.log("User Wallet:", currentUser.wallet);
             console.log("User Type:", userData.type);
             console.log("Full User Data:", userData);
             console.log("=============================");
@@ -2101,14 +2084,63 @@
       }
 
       function openWhatsApp(event, userId) {
-        event.stopPropagation();
-        showToast(`Opening WhatsApp for user: ${userId}`);
-      }
+          if (event) event.stopPropagation();
+          showToast(`Whatsapp Clicked`);
 
-      function openNavigation(event, userId) {
-        event.stopPropagation();
-        showToast(`Opening navigation for user: ${userId}`);
-      }
+          // Find the order where Seller or Customer matches userId
+          const order = currentOrders.find(
+            (o) => o.Seller === userId || o.Customer === userId
+          );
+
+          // If found, get the relevant number
+          let phoneNumber = null;
+          if (order) {
+            if (order.Seller === userId) {
+              phoneNumber = order.SellerNumber;
+            } else if (order.Customer === userId) {
+              phoneNumber = order.CustomerNumber;
+            }
+          }
+
+
+          if (phoneNumber) {
+            // Remove any non-digit characters just in case
+            const cleanNumber = phoneNumber.replace(/\D/g, '');
+            // Open WhatsApp chat in a new tab
+            window.open(`https://wa.me/${cleanNumber}`, '_blank');
+          } else {
+            showToast('Phone number not found.');
+          }
+        }
+
+        function openNavigation(event, userId) {
+          if (event) event.stopPropagation();
+          showToast(`Navigation Clicked`);
+
+          // Find the order where Seller or Customer matches userId
+          const order = currentOrders.find(
+            (o) => o.Seller === userId || o.Customer === userId
+          );
+
+          let latitude = null;
+          let longitude = null;
+          if (order) {
+            if (order.Seller === userId) {
+              longitude = order.SellerLongitude;
+              latitude = order.SellerLatitude;
+            } else if (order.Customer === userId) {
+              longitude = order.CustomerLongitude;
+              latitude = order.CustomerLatitude;
+            }
+          }
+
+          if (latitude && longitude) {
+            // Open Google Maps in a new tab at the coordinates
+            window.open(`https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`, '_blank');
+          } else {
+            showToast('Location coordinates not found.');
+          }
+        }
 
       // Alias functions for the old API
       function addSquare(userData) {
@@ -2122,6 +2154,40 @@
       function populateGrid(dataArray) {
         return populateCards(dataArray);
       }
+
+      // Add this new function for the blue card CTA
+      function handleArrivedAtSiin() {
+          if (currentModalUser && currentModalUser.orders) {
+            // Only select orders with DeliveryStatus "Picked Up"
+            const pickedUpOrders = currentModalUser.orders.filter(
+              (order) => order.DeliveryStatus === "Picked Up"
+            );
+
+            if (pickedUpOrders.length === 0) {
+              showToast("No orders with status 'Picked Up' to update.");
+              closeModal();
+              return;
+            }
+
+            // Call the imported updateOrderStatus function from updateOrderStatus.js
+            updateOrderStatus(pickedUpOrders, "Arrived at Siin")
+              .then((result) => {
+                if (result.success) {
+                  showToast(`Marked ${result.count} orders as Arrived at Siin for ${currentModalUser.username}`);
+                  setTimeout(() => {
+                    loadOrdersData(currentMode);
+                  }, 1000);
+                } else {
+                  showToast(result.error || "Failed to update orders");
+                }
+                closeModal();
+              })
+              .catch((error) => {
+                showToast("Failed to update orders. Please try again.");
+                closeModal();
+              });
+          }
+        }
     </script>
   </body>
 </html>
