@@ -692,7 +692,7 @@
     <div class="mobile-container">
       <div class="mobile-content">
         <div class="logo-container">
-          <div class="logo-left">BHD </div>
+          <div class="logo-left">BHD <span id="tt">Loading</span></div>
           <div class="logo-center"></div>
           <div class="logo-right" id="logoRightName"></div>
         </div>
@@ -715,7 +715,7 @@
       </div>
     </div>
 
-    <button class="floating-map-btn" onclick="openMap()">🗺️</button>
+    <!-- <button class="floating-map-btn" onclick="openMap()">🗺️</button> -->
 
     <!-- Modal -->
     <div id="userModal" class="modal-overlay">
@@ -1914,13 +1914,15 @@
         if (currentUser) {
           try {
             const userData = JSON.parse(currentUser);
-            console.log("=== USER DATA FROM LOGIN ===");
-            console.log("User ID:", userData.id);
-            console.log("User Name:", userData.name);
-            console.log("User Wallet:", currentUser.wallet);
-            console.log("User Type:", userData.type);
-            console.log("Full User Data:", userData);
-            console.log("=============================");
+            // console.log("=== USER DATA FROM LOGIN ===");
+            // console.log("User ID:", userData.id);
+            // console.log("User Name:", userData.name);
+            // console.log("User Wallet:", userData.wallet);
+            // console.log("User Type:", userData.type);
+            // console.log("Full User Data:", userData);
+            // console.log("=============================");
+
+            document.getElementById("tt").textContent = userData.wallet;
 
             // Update the user name in the header
             const logoRight = document.querySelector(".logo-right");

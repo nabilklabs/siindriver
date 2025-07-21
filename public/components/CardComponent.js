@@ -140,20 +140,21 @@ class CardComponent {
             font-weight: 600;
             color: #ffffff;
             line-height: 1.2;
-            max-width: 60%;
+            max-width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
             flex-shrink: 1;
           ">${userData.username}</div>
           <div class="card-items" style="
-            font-size: 28px;
+            font-size: 12px;
             font-weight: 700;
             color: #ffffff;
             line-height: 1;
             min-width: 35px;
-            text-align: center;
+            text-align: left;
             flex-shrink: 0;
+            margin-top: 2px;
           ">${userData.itemCount}</div>
         </div>
         <div class="card-bottom" style="

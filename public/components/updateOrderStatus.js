@@ -102,7 +102,7 @@ export async function updateOrderStatus(orders, action) {
     return { success: false, count: 0, error: "No valid order IDs found" };
   }
 
-  const apiUrl = "https://api.test.siin.shop/v3/orders/multiple/status?key=SIINSHOP";
+  const apiUrl = "https://main-api.siin.shop/v3/orders/public/get-24-hour-order?key=SIINSHOP";
   const body = {
     _id: dbIds,
     deliveryStatus: deliveryStatus
